@@ -36,7 +36,7 @@
 例如：
 
 ```
-/查成分 小南莓Official
+/查成分 9200471
 ```
 
 ### 🎲 /rd —— 掷骰子
@@ -177,3 +177,22 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 - **B 站接口风控**：B 站对匿名请求有 412 风控，动态轮询必须登录。解决方案是接入扫码登录，Cookie 持久化到本地数据库。
 - **`plugin_dirs` 加载下的资源定位**：目录方式加载插件时模块名带目录前缀，插件内部按包名取内置模板会报错（Web 后台 500）。已修复为基于 `__file__` 定位资源，并向上游提交了 PR。
 - **退出时的无害告警**：Playwright 在进程退出阶段关闭浏览器时会因连接已断开打印一条 WARNING，属于良性竞态，不影响正常退出。
+
+## 致谢
+
+本项目建立在以下开源项目之上，感谢这些项目和作者们的付出：
+
+- [NoneBot2](https://github.com/nonebot/nonebot2) —— 机器人框架
+- [LuckyLilliaBot（LLBot）](https://github.com/LLOneBot/LuckyLilliaBot) —— QQ 协议端，提供 OneBot V11 接口
+- [nonebot-plugin-retirement-countdown](https://github.com/coni233/nonebot-plugin-retirement-countdown) —— 退休倒计时
+- [nonebot-adapter-onebot](https://github.com/nonebot/adapter-onebot) —— OneBot V11 适配器
+- [nonebot-plugin-apscheduler](https://github.com/nonebot/plugin-apscheduler) —— 定时任务
+- [nonebot-plugin-localstore](https://github.com/nonebot/plugin-localstore) —— 本地数据存储
+- [nonebot-plugin-htmlrender](https://github.com/nonebotjs/nonebot-plugin-htmlrender) —— 图片渲染
+- [nonebot-plugin-bilibili](https://github.com/coni233/nonebot-plugin-bilibili) —— B 站直播/动态订阅（fork 自上游开源项目，本地维护并已向上游提交 PR）
+- [nonebot-plugin-ddcheck](https://github.com/noneplugin/nonebot-plugin-ddcheck) —— B 站 VTuber 成分查询
+- [nonebot-plugin-roll](https://github.com/MinatoAquaCrews/nonebot_plugin_roll) —— 掷骰子（原作者 KafCoppelia）
+
+## License
+
+MIT
