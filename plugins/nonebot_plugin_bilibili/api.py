@@ -8,6 +8,8 @@ from datetime import datetime, timezone, timedelta
 
 import httpx
 
+from nonebot import logger
+
 from .database import repository
 from .config import plugin_config
 from .models import LiveAction, ContentKind, PushContent, LoginSession, RichTextSegment
@@ -95,6 +97,24 @@ class BilibiliApi:
         if not isinstance(payload, dict):
             raise BilibiliApiError("B 站接口返回了无法识别的数据")
         code = int(payload.get("code", 0))
+        if code == -352 and use_cookie and cookies:
+            # 失效/异常的 Cookie 可能触发 B 站风控（-352），去掉 Cookie 匿名重试一次
+            logger.warning(
+                "B 站接口返回 -352，Cookie 可能已失效，将去除 Cookie 重试；"
+                "若频繁出现可重新使用 /bili login 登录"
+            )
+            cookies = None
+            try:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                payload = response.json()
+            except (httpx.HTTPError, ValueError):
+                raise BilibiliApiError(
+                    "B 站接口风控（-352），去除 Cookie 重试仍失败，请稍后重试或重新使用 /bili login 登录"
+                ) from None
+            if not isinstance(payload, dict):
+                raise BilibiliApiError("B 站接口返回了无法识别的数据")
+            code = int(payload.get("code", 0))
         if code != 0:
             message = payload.get("message") or payload.get("msg") or "未知错误"
             raise BilibiliApiError(f"B 站接口错误 {code}: {message}")
