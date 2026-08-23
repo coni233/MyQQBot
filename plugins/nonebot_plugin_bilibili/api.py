@@ -99,9 +99,8 @@ class BilibiliApi:
         code = int(payload.get("code", 0))
         if code == -352 and use_cookie and cookies:
             # 失效/异常的 Cookie 可能触发 B 站风控（-352），去掉 Cookie 匿名重试一次
-            logger.warning(
-                "B 站接口返回 -352，Cookie 可能已失效，将去除 Cookie 重试；"
-                "若频繁出现可重新使用 /bili login 登录"
+            logger.debug(
+                "B 站接口返回 -352，Cookie 可能已失效，尝试去除 Cookie 匿名重试"
             )
             cookies = None
             try:
