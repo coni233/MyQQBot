@@ -1,0 +1,46 @@
+from nonebot import on_command
+
+help = on_command("help", aliases={"帮助"})
+
+@help.handle()
+async def handle_help():
+    await help.finish(
+        "✨ 功能列表\n"
+        "\n"
+        "📅 /退休 [出生日期] [性别]\n"
+        "    计算退休日期与倒计时，例如：/退休 1995-01-01 男\n"
+        "    不带参数可交互式输入，回复「取消」可退出\n"
+        "\n"
+        "🧐 /查成分 <B站用户名或UID>\n"
+        "    查询 B 站用户关注的 VTuber 成分，例如：/查成分 小南莓Official\n"
+        "\n"
+        "🎲 /rd /roll /掷骰 [x]d[y]\n"
+        "    掷出 x 个 y 面的骰子，例如：/rd 2d6\n"
+        "\n"
+        "🎮 /游戏 [今天|本周|下周|日期]\n"
+        "    查询游戏日程：\n"
+        "    /游戏              今天\n"
+        "    /游戏 本周         本周\n"
+        "    /游戏 下周         下周\n"
+        "    /游戏 明天         明天（后天/昨天也行）\n"
+        "    /游戏 2026-08-22   指定日期（也支持 8月22日、8.22）\n"
+        "    快捷指令：/今日游戏 /本周游戏 /下周游戏\n"
+        "\n"
+        "📺 /bili <add|del|list|login|push|atall|filter|help>\n"
+        "    B 站订阅推送：\n"
+        "    /bili add <UID>            订阅 UP 主（群主/管理员/超管）\n"
+        "    /bili del <UID>            取消订阅\n"
+        "    /bili list                 查看本群订阅\n"
+        "    /bili atall live on <UID>  开播时 @全体（群主/管理员/超管）\n"
+        "    /bili filter add <正则>    动态过滤\n"
+        "    /bili push live <直播间号>  手动推送开播卡片\n"
+        "    /bili login                扫码登录 B 站（超管）\n"
+        "    完整命令见：/bili help\n"
+        "    Web 控制台：http://127.0.0.1:8080/bili-subscription/\n"
+        "\n"
+        "❓ /help\n"
+        "    查看本帮助\n"
+        "\n"
+        "功能开发中...想要新需求或 bug 反馈请联系 690379256\n"
+        "详情请参见：https://www.coni.top/blog/?p=1077"
+    )

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    {{ font_css | safe }}
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body { width: 580px; padding: 20px; color: #18191c; font-family: "Microsoft YaHei", sans-serif; }
+    #bili-card { width: 540px; padding: 10px; border-radius: 20px; background: var(--bili-theme); box-shadow: 0 10px 34px rgba(25, 31, 38, .18); }
+    .card-inner { overflow: hidden; border-radius: 12px; background: #fff; }
+    .badges { position: relative; z-index: 2; height: 0; }
+    .badge { position: absolute; top: 12px; min-height: 28px; display: flex; align-items: center; padding: 4px 14px; color: #fff; font-size: 12px; font-weight: 700; box-shadow: 0 3px 10px rgba(0, 0, 0, .14); }
+    .badge.kind { left: 0; border-radius: 0 14px 14px 0; background: var(--bili-theme); }
+    .badge.id { right: 0; max-width: 210px; overflow: hidden; border-radius: 14px 0 0 14px; background: rgba(30, 35, 42, .78); text-overflow: ellipsis; white-space: nowrap; }
+    .header { display: flex; align-items: center; gap: 14px; padding: 54px 20px 10px; }
+    .avatar { width: 56px; height: 56px; flex: 0 0 auto; border: 2px solid #eceff2; border-radius: 50%; background: #f2f3f5; object-fit: cover; }
+    .author { min-width: 0; }
+    .name { overflow: hidden; color: var(--bili-accent); font-size: 18px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .time { margin-top: 3px; color: #9499a0; font-size: 12px; }
+    .content { padding: 10px 20px 18px; }
+    .title { margin: 0 0 8px; font-size: 17px; line-height: 1.45; }
+    .text { color: #30343b; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .inline-emoji { display: inline-block; width: 24px; height: 24px; margin: 0 2px; vertical-align: -6px; object-fit: contain; }
+    .image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 14px; }
+    .image-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .image-grid.single { grid-template-columns: 1fr; }
+    .image-cell { position: relative; min-width: 0; overflow: hidden; aspect-ratio: 1; border-radius: 8px; background: #f1f2f3; }
+    .dynamic-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .dynamic-image.long { object-position: center top; }
+    .long-badge { position: absolute; right: 5px; bottom: 5px; padding: 2px 5px; border-radius: 3px; background: rgba(35, 39, 46, .72); color: #fff; font-size: 10px; line-height: 1.4; }
+    .image-grid.single .image-cell { aspect-ratio: auto; }
+    .image-grid.single .dynamic-image { height: auto; max-height: 760px; object-fit: contain; }
+    .forward-card { margin-top: 14px; padding: 14px; border: 1px solid #e3e5e7; border-radius: 8px; background: #f6f7f8; }
+    .forward-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+    .forward-avatar { width: 32px; height: 32px; flex: 0 0 auto; border: 1px solid #e3e5e7; border-radius: 50%; background: #fff; object-fit: cover; }
+    .forward-name { min-width: 0; overflow: hidden; color: var(--bili-accent); font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .forward-title { margin: 0 0 7px; font-size: 15px; line-height: 1.45; }
+    .forward-card .text { font-size: 13px; }
+    .forward-card .image-grid { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  {% macro render_text(item) -%}
+    {% if item.rich_text %}<div class="text">{%- for segment in item.rich_text -%}{%- if segment.emoji_url -%}<img class="inline-emoji" src="{{ segment.emoji_url }}" alt="{{ segment.text }}">{%- else -%}{{ segment.text }}{%- endif -%}{%- endfor -%}</div>{% elif item.text %}<div class="text">{{ item.text }}</div>{% endif %}
+  {%- endmacro %}
+  {% macro render_images(item) -%}
+    {% set item_images = item.images[:9] if item.images else ([item.cover] if item.cover else []) %}
+    {% set dimensions = item.image_dimensions[:9] if item.image_dimensions else [] %}
+    {% if item_images %}<div class="image-grid {% if item_images|length == 1 %}single{% elif item_images|length == 2 %}two{% endif %}">{% for image in item_images %}{% set dimension = dimensions[loop.index0] if loop.index0 < dimensions|length else none %}{% set is_long = item_images|length > 1 and dimension and dimension[0] > 0 and dimension[1] >= dimension[0] * 3 %}<div class="image-cell"><img class="dynamic-image{% if is_long %} long{% endif %}" src="{{ image }}" alt="动态图片 {{ loop.index }}">{% if is_long %}<span class="long-badge">长图</span>{% endif %}</div>{% endfor %}</div>{% endif %}
+  {%- endmacro %}
+  <article id="bili-card">
+    <div class="card-inner">
+      <div class="badges"><div class="badge kind">动态更新</div><div class="badge id">{{ content.id }}</div></div>
+      <header class="header">
+        {% if content.author_avatar %}<img class="avatar" src="{{ content.author_avatar }}" alt="">{% endif %}
+        <div class="author"><div class="name">{{ content.author_name }}</div>{% if content.published_text %}<div class="time">{{ content.published_text }}</div>{% endif %}</div>
+      </header>
+      <section class="content">
+        {% if content.title and content.title != "发布了新动态" %}<h1 class="title">{{ content.title }}</h1>{% endif %}
+        {{ render_text(content) }}
+        {{ render_images(content) }}
+        {% if content.forward %}<div class="forward-card">
+          <div class="forward-head">{% if content.forward.author_avatar %}<img class="forward-avatar" src="{{ content.forward.author_avatar }}" alt="">{% endif %}<div class="forward-name">@{{ content.forward.author_name }}</div></div>
+          {% if content.forward.title and content.forward.title != "发布了新动态" %}<h2 class="forward-title">{{ content.forward.title }}</h2>{% endif %}
+          {{ render_text(content.forward) }}
+          {{ render_images(content.forward) }}
+        </div>{% endif %}
+      </section>
+    </div>
+  </article>
+</body>
+</html>

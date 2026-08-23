@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+
+# 环境配置（包含 SESSDATA Cookie、SUPERUSERS 等敏感信息，切勿提交）
+.env
+.env.*
+!.env.example
+
+# NoneBot 运行时数据（订阅、Cookie、SQLite、浏览器登录态）
+data/
+cache/
+logs/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

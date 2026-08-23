@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bilibili 订阅管理登录</title>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root { color-scheme:light; --brand:#fb7299; --brand-strong:#e85b85; --ink:#20242a; --muted:#68717d; --line:#dce1e6; --bg:#f2f4f6; --surface:#fff; }
+    * { box-sizing:border-box; }
+    body { min-width:320px; min-height:100vh; margin:0; display:grid; place-items:center; padding:22px; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; letter-spacing:0; }
+    .shell { width:min(420px,100%); }
+    .brand { display:flex; align-items:center; gap:11px; margin:0 0 18px 2px; }
+    .brand-mark { width:38px; height:38px; display:grid; place-items:center; border-radius:8px; background:var(--brand); color:#fff; font-size:19px; font-weight:800; }
+    .brand strong,.brand span { display:block; }
+    .brand strong { font-size:15px; }
+    .brand span { color:var(--muted); font-size:11px; }
+    main { background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 14px 42px rgba(31,35,41,.09); }
+    .head { padding:24px 24px 19px; border-bottom:1px solid var(--line); }
+    .head-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { margin:0; font-size:19px; }
+    .badge { display:inline-flex; align-items:center; gap:5px; border-radius:12px; padding:3px 9px; background:#eaf7f1; color:#16825d; font-size:11px; font-weight:600; white-space:nowrap; }
+    .head p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+    form { padding:22px 24px 24px; }
+    label { display:block; margin-bottom:7px; color:#4f5863; font-size:12px; font-weight:650; }
+    .input-wrap { position:relative; }
+    .input-wrap svg { position:absolute; left:11px; top:11px; width:18px; height:18px; color:#8b939d; pointer-events:none; }
+    input,button { width:100%; min-height:42px; border-radius:7px; font:inherit; letter-spacing:0; }
+    input { border:1px solid #c9d0d7; padding:9px 11px 9px 39px; outline:none; color:var(--ink); }
+    input:focus { border-color:#008fbd; box-shadow:0 0 0 3px rgba(0,143,189,.11); }
+    button { margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; font-weight:700; }
+    button:hover { border-color:var(--brand-strong); background:var(--brand-strong); }
+    button:disabled { cursor:wait; opacity:.65; }
+    button svg { width:17px; height:17px; }
+    #error { min-height:20px; margin-top:10px; color:#bd2f47; font-size:12px; }
+    .foot { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:14px; color:var(--muted); font-size:11px; }
+    .foot svg { width:14px; height:14px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand"><div class="brand-mark">B</div><div><strong>Bilibili 订阅</strong><span>NoneBot2 控制台</span></div></div>
+    <main>
+      <div class="head"><div class="head-row"><h1>管理后台登录</h1><span class="badge"><i data-lucide="shield-check"></i>受保护</span></div><p>使用插件管理令牌验证身份</p></div>
+      <form id="loginForm">
+        <label for="token">管理令牌</label>
+        <div class="input-wrap"><i data-lucide="key-round"></i><input id="token" name="token" type="password" autocomplete="current-password" required autofocus></div>
+        <button id="submitButton" type="submit"><i data-lucide="log-in"></i>登录</button>
+        <div id="error" role="alert"></div>
+      </form>
+    </main>
+    <div class="foot"><i data-lucide="lock-keyhole"></i><span>HttpOnly Cookie 会话</span></div>
+  </div>
+  <script>
+    const base=location.pathname.replace(/\/login\/?$/,'');
+    const form=document.getElementById('loginForm');
+    const tokenInput=document.getElementById('token');
+    const errorBox=document.getElementById('error');
+    const submitButton=document.getElementById('submitButton');
+    if(window.lucide)window.lucide.createIcons();
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      errorBox.textContent='';
+      submitButton.disabled=true;
+      try {
+        const response=await fetch(base+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokenInput.value})});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(result.detail||'登录失败');
+        location.href=base+'/';
+      } catch(error) {
+        errorBox.textContent=error.message||'网络连接失败';
+        submitButton.disabled=false;
+      }
+    };
+  </script>
+</body>
+</html>

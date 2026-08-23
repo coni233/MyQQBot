@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    {{ font_css | safe }}
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body { width: 580px; padding: 20px; color: #18191c; font-family: "Microsoft YaHei", sans-serif; }
+    #bili-card { width: 540px; padding: 10px; border-radius: 20px; background: var(--bili-theme); box-shadow: 0 10px 34px rgba(25, 31, 38, .18); }
+    .card-inner { overflow: hidden; border-radius: 12px; background: #fff; }
+    .cover-wrap { position: relative; height: 310px; overflow: hidden; background: var(--bili-theme); }
+    .cover { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .06) 30%, rgba(0, 0, 0, .78) 100%); }
+    .status { position: absolute; top: 14px; left: 0; display: flex; align-items: center; gap: 7px; padding: 5px 16px; border-radius: 0 14px 14px 0; background: var(--bili-theme); color: #fff; font-size: 12px; font-weight: 750; box-shadow: 0 3px 10px rgba(0, 0, 0, .16); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .18); }
+    .cover-copy { position: absolute; right: 18px; bottom: 16px; left: 18px; color: #fff; }
+    .title { margin: 0; font-size: 20px; line-height: 1.45; text-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+    .host { display: flex; align-items: center; gap: 12px; padding: 16px 20px 12px; }
+    .avatar { width: 46px; height: 46px; flex: 0 0 auto; border: 2px solid #eceff2; border-radius: 50%; background: #f2f3f5; object-fit: cover; }
+    .host-copy { min-width: 0; }
+    .name { overflow: hidden; color: var(--bili-accent); font-size: 15px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .uid { margin-top: 3px; color: #9499a0; font-size: 11px; }
+    .meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 20px 16px; color: #61666d; font-size: 12px; }
+    .area { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .live-time { flex: 0 0 auto; color: #9499a0; }
+  </style>
+</head>
+<body>
+  <article id="bili-card">
+    <div class="card-inner">
+      <section class="cover-wrap">
+        {% if content.cover %}<img class="cover" src="{{ content.cover }}" alt="">{% endif %}
+        <div class="shade"></div>
+        <div class="status"><span class="dot"></span>{% if content.live_action and content.live_action.value == 'stop' %}直播结束{% else %}直播中{% endif %}</div>
+        <div class="cover-copy"><h1 class="title">{{ content.title }}</h1></div>
+      </section>
+      <section class="host">
+        {% if content.author_avatar %}<img class="avatar" src="{{ content.author_avatar }}" alt="">{% endif %}
+        <div class="host-copy"><div class="name">{{ content.author_name }}</div><div class="uid">UID {{ content.uid }}</div></div>
+      </section>
+      {% if content.text or content.published_text %}<div class="meta">{% if content.text %}<span class="area">{{ content.text }}</span>{% endif %}{% if content.published_text %}<span class="live-time">开播时间 {{ content.published_text }}</span>{% endif %}</div>{% endif %}
+    </div>
+  </article>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bilibili 订阅管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand:#fb7299;
+      --brand-strong:#e85b85;
+      --cyan:#008fbd;
+      --green:#16825d;
+      --amber:#b86800;
+      --red:#c9364f;
+      --ink:#20242a;
+      --muted:#68717d;
+      --soft:#8e96a1;
+      --line:#dde2e7;
+      --bg:#f3f5f7;
+      --surface:#fff;
+      --sidebar:#20242a;
+      --sidebar-muted:#aeb5be;
+      --radius:8px;
+      --sidebar-width:232px;
+      --shadow:0 8px 24px rgba(31,35,41,.07);
+    }
+    * { box-sizing:border-box; }
+    html { min-width:320px; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; letter-spacing:0; }
+    button,input,select { font:inherit; letter-spacing:0; }
+    button { cursor:pointer; }
+    button:disabled { cursor:wait; opacity:.62; }
+    .icon { width:18px; height:18px; flex:0 0 auto; }
+    .icon-sm { width:16px; height:16px; }
+    .app-shell { min-height:100vh; }
+    .sidebar { position:fixed; inset:0 auto 0 0; z-index:30; width:var(--sidebar-width); display:flex; flex-direction:column; background:var(--sidebar); color:#fff; border-right:1px solid #181b20; }
+    .brand { height:70px; display:flex; align-items:center; gap:11px; padding:0 18px; border-bottom:1px solid rgba(255,255,255,.09); }
+    .brand-mark { width:34px; height:34px; display:grid; place-items:center; border-radius:7px; background:var(--brand); color:#fff; font-size:18px; font-weight:800; }
+    .brand-title { min-width:0; }
+    .brand-title strong { display:block; font-size:14px; }
+    .brand-title span { display:block; margin-top:1px; color:var(--sidebar-muted); font-size:11px; }
+    .nav { display:grid; gap:4px; padding:14px 10px; }
+    .nav-button { width:100%; min-height:42px; display:flex; align-items:center; gap:11px; border:0; border-radius:7px; padding:0 12px; background:transparent; color:var(--sidebar-muted); text-align:left; }
+    .nav-button:hover { background:rgba(255,255,255,.07); color:#fff; }
+    .nav-button.active { background:#353a42; color:#fff; box-shadow:inset 3px 0 0 var(--brand); }
+    .nav-badge { margin-left:auto; min-width:22px; padding:1px 7px; border-radius:10px; background:#484e57; color:#fff; font-size:11px; text-align:center; }
+    .sidebar-footer { margin-top:auto; padding:14px 12px; border-top:1px solid rgba(255,255,255,.09); }
+    .account-row { display:flex; align-items:center; gap:9px; min-width:0; }
+    .account-dot { width:9px; height:9px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 3px rgba(184,104,0,.18); }
+    .account-dot.online { background:#4ac08a; box-shadow:0 0 0 3px rgba(74,192,138,.17); }
+    .account-copy { min-width:0; flex:1; }
+    .account-copy strong,.account-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .account-copy strong { font-size:12px; }
+    .account-copy span { color:var(--sidebar-muted); font-size:10px; }
+    .main { min-height:100vh; margin-left:var(--sidebar-width); }
+    .topbar { height:70px; position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 28px; background:rgba(255,255,255,.96); border-bottom:1px solid var(--line); }
+    .topbar-title { min-width:0; }
+    .topbar-title h1 { margin:0; font-size:19px; line-height:1.25; }
+    .topbar-title p { margin:3px 0 0; color:var(--muted); font-size:12px; }
+    .topbar-actions { display:flex; align-items:center; gap:8px; }
+    .content { width:min(1420px,100%); margin:0 auto; padding:24px 28px 48px; }
+    .page { display:none; }
+    .page.active { display:block; }
+    .page-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    .page-heading h2 { margin:0; font-size:18px; }
+    .page-heading p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+    .button { min-height:36px; display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--line); border-radius:7px; padding:7px 12px; background:#fff; color:var(--ink); font-weight:600; }
+    .button:hover { border-color:#bcc4cc; background:#f9fafb; }
+    .button.primary { border-color:var(--brand); background:var(--brand); color:#fff; }
+    .button.primary:hover { border-color:var(--brand-strong); background:var(--brand-strong); }
+    .button.danger { color:var(--red); }
+    .button.icon-only { width:36px; padding:0; }
+    .button.compact { min-height:31px; padding:5px 9px; font-size:12px; }
+    .field { display:grid; gap:6px; min-width:0; }
+    .field label { color:#4e5661; font-size:12px; font-weight:600; }
+    .input,.select { width:100%; min-height:38px; border:1px solid #cbd1d8; border-radius:7px; padding:8px 10px; background:#fff; color:var(--ink); outline:none; }
+    .input:focus,.select:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,143,189,.11); }
+    .input::placeholder { color:#9aa1aa; }
+    .panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 1px 2px rgba(31,35,41,.03); }
+    .panel-head { min-height:54px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); }
+    .panel-head h3 { margin:0; font-size:14px; }
+    .panel-body { padding:16px; }
+    .stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+    .stat { min-height:106px; display:flex; align-items:center; gap:14px; padding:17px; background:#fff; border:1px solid var(--line); border-radius:var(--radius); }
+    .stat-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:8px; }
+    .stat-icon.pink { background:#fff0f4; color:var(--brand-strong); }
+    .stat-icon.blue { background:#eaf8fc; color:var(--cyan); }
+    .stat-icon.green { background:#eaf7f1; color:var(--green); }
+    .stat-icon.amber { background:#fff5e8; color:var(--amber); }
+    .stat-value { display:block; font-size:24px; line-height:1.1; font-weight:750; }
+    .stat-label { display:block; margin-top:5px; color:var(--muted); font-size:12px; }
+    .overview-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(300px,.6fr); gap:16px; }
+    .group-summary-list { display:grid; }
+    .summary-row { display:flex; align-items:center; gap:11px; min-height:62px; padding:9px 0; border-bottom:1px solid #edf0f2; }
+    .summary-row:last-child { border-bottom:0; }
+    .avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; background:#edf0f2; flex:0 0 auto; }
+    .summary-main { min-width:0; flex:1; }
+    .summary-main strong,.summary-main span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .summary-main span { margin-top:2px; color:var(--muted); font-size:11px; }
+    .badge { display:inline-flex; align-items:center; gap:5px; min-height:24px; border-radius:12px; padding:2px 9px; background:#f0f2f4; color:#59616c; font-size:11px; font-weight:600; }
+    .badge.ok { background:#eaf7f1; color:var(--green); }
+    .badge.warn { background:#fff5e8; color:var(--amber); }
+    .runtime-list { display:grid; gap:12px; }
+    .runtime-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:12px; border-bottom:1px solid #edf0f2; }
+    .runtime-row:last-child { padding-bottom:0; border-bottom:0; }
+    .runtime-label { display:flex; align-items:center; gap:8px; color:var(--muted); }
+    .toolbar { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
+    .toolbar .grow { flex:1 1 220px; }
+    .add-grid { display:grid; grid-template-columns:minmax(240px,1.5fr) minmax(180px,1fr) auto; gap:10px; align-items:end; }
+    .selected-group { min-height:58px; display:flex; align-items:center; gap:10px; border:1px solid #cbd1d8; border-radius:7px; padding:8px 10px; background:#fff; }
+    .selected-group.empty { min-height:58px; display:flex; justify-content:flex-start; padding:8px 10px; text-align:left; color:var(--muted); }
+    .selected-group .avatar { width:38px; height:38px; }
+    .selected-group-copy { min-width:0; flex:1; }
+    .selected-group-copy strong,.selected-group-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .selected-group-copy span { color:var(--muted); font-size:11px; }
+    .search-row { display:flex; align-items:center; gap:10px; margin:14px 0; }
+    .search-wrap { position:relative; flex:1; }
+    .search-wrap .input { padding-left:36px; }
+    .search-wrap .icon { position:absolute; left:11px; top:10px; color:var(--soft); pointer-events:none; }
+    .group-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(560px,100%),1fr)); gap:14px; }
+    .group-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+    .group-card-head { display:flex; align-items:center; gap:12px; min-height:70px; padding:13px 15px; background:#fbfcfd; border-bottom:1px solid var(--line); }
+    .group-meta { min-width:0; flex:1; }
+    .group-meta strong,.group-meta span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .group-meta strong { font-size:14px; }
+    .group-meta span { margin-top:2px; color:var(--muted); font-size:11px; }
+    .up-list { display:grid; }
+    .up-item { padding:13px 15px; border-bottom:1px solid #edf0f2; }
+    .up-head { display:flex; align-items:center; gap:10px; }
+    .up-copy { min-width:0; flex:1; }
+    .up-copy strong,.up-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .up-copy span { color:var(--muted); font-size:11px; }
+    .atall-panel { margin:12px 0 0 52px; padding:10px; border:1px solid #e2e6ea; border-radius:7px; background:#f8fafb; }
+    .atall-head { display:flex; align-items:center; gap:7px; margin-bottom:8px; color:#505965; }
+    .atall-head strong { font-size:11px; }
+    .atall-head span { margin-left:auto; color:var(--muted); font-size:10px; }
+    .atall-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+    .atall-option { position:relative; min-width:0; cursor:pointer; }
+    .atall-option input { position:absolute; opacity:0; pointer-events:none; }
+    .atall-tile { min-height:42px; display:grid; grid-template-columns:24px minmax(0,1fr) 26px; align-items:center; gap:7px; padding:6px 7px; border:1px solid #e0e5e9; border-radius:6px; background:#fff; transition:.16s; }
+    .atall-option:hover .atall-tile { border-color:#bdc6ce; }
+    .atall-kind-icon { width:24px; height:24px; display:grid; place-items:center; border-radius:5px; background:#edf1f4; color:#69737e; }
+    .atall-copy { min-width:0; }
+    .atall-copy strong,.atall-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .atall-copy strong { color:#3f4852; font-size:10px; }
+    .atall-copy span { color:#8a929b; font-size:9px; }
+    .atall-toggle { width:25px; height:15px; position:relative; border-radius:8px; background:#cbd1d7; transition:.18s; }
+    .atall-toggle::after { content:""; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:#fff; transition:.18s; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+    .atall-option input:checked + .atall-tile { border-color:color-mix(in srgb,var(--atall-color) 42%,#dce2e7); background:color-mix(in srgb,var(--atall-color) 7%,#fff); }
+    .atall-option input:checked + .atall-tile .atall-kind-icon { background:color-mix(in srgb,var(--atall-color) 14%,#fff); color:var(--atall-color); }
+    .atall-option input:checked + .atall-tile .atall-toggle { background:var(--atall-color); }
+    .atall-option input:checked + .atall-tile .atall-toggle::after { transform:translateX(10px); }
+    .filters { padding:13px 15px; background:#fbfcfd; }
+    .filter-form { display:flex; gap:8px; }
+    .filter-form .input { width:auto; min-width:0; min-height:34px; flex:1; }
+    .filter-form .button { flex:0 0 auto; }
+    .chip-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+    .chip { display:inline-flex; align-items:center; gap:5px; max-width:100%; min-height:25px; border-radius:13px; padding:2px 5px 2px 9px; background:#eef1f4; color:#58616c; font-size:11px; }
+    .chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .chip button { width:20px; height:20px; display:grid; place-items:center; border:0; border-radius:50%; padding:0; background:transparent; color:#7b838d; }
+    .chip button:hover { background:#dfe3e7; color:var(--red); }
+    .render-editor { border-top:1px solid #edf0f2; background:#fff; }
+    .render-editor summary { min-height:39px; display:flex; align-items:center; gap:7px; padding:8px 15px; color:#59616c; font-size:12px; font-weight:650; cursor:pointer; list-style:none; }
+    .render-editor summary::-webkit-details-marker { display:none; }
+    .render-editor[open] summary { color:var(--cyan); }
+    .render-category-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); padding:0 15px 14px; }
+    .render-category { min-width:0; padding:0 12px; border-left:1px solid #e7eaed; }
+    .render-category:first-child { padding-left:0; border-left:0; }
+    .render-category:last-child { padding-right:0; }
+    .render-category-head { display:flex; align-items:center; gap:7px; margin-bottom:9px; color:var(--render-color); }
+    .render-category-head strong { color:#414a54; font-size:11px; }
+    .render-category .field { gap:3px; margin-top:7px; }
+    .render-category .field label { font-size:9px; }
+    .render-category .select { min-height:31px; padding:4px 7px; font-size:10px; }
+    .color-row { min-height:31px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+    .color-input { width:42px; height:28px; flex:0 0 auto; border:1px solid #d6dce1; border-radius:5px; padding:2px; background:#fff; }
+    .gradient-toggle { min-width:0; display:flex; align-items:center; gap:5px; color:var(--muted); font-size:9px; }
+    .gradient-toggle input { width:14px; height:14px; accent-color:var(--cyan); }
+    .gradient-color[hidden] { display:none; }
+    .render-save { width:100%; min-height:31px; margin-top:9px; font-size:10px; }
+    .empty { min-height:210px; display:grid; place-items:center; padding:28px; text-align:center; color:var(--muted); }
+    .empty .empty-icon { width:44px; height:44px; display:grid; place-items:center; margin:0 auto 10px; border-radius:8px; background:#eef1f4; color:#7c8590; }
+    .empty strong { display:block; color:#4e5661; }
+    .empty span { display:block; margin-top:3px; font-size:12px; }
+    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .form-grid .full { grid-column:1/-1; }
+    .segmented { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px; border:1px solid var(--line); border-radius:7px; background:#f0f2f4; }
+    .segmented label { position:relative; min-width:0; }
+    .segmented input { position:absolute; opacity:0; }
+    .segmented span { min-height:32px; display:flex; align-items:center; justify-content:center; gap:6px; border-radius:5px; color:#66707b; font-size:12px; font-weight:600; cursor:pointer; }
+    .segmented input:checked + span { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(31,35,41,.12); }
+    .account-panel { display:grid; grid-template-columns:minmax(0,.75fr) minmax(320px,1.25fr); gap:16px; }
+    .status-box { min-height:180px; display:flex; flex-direction:column; justify-content:space-between; padding:20px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; }
+    .status-title { display:flex; align-items:center; gap:12px; }
+    .status-symbol { width:44px; height:44px; display:grid; place-items:center; border-radius:8px; background:#fff5e8; color:var(--amber); }
+    .status-symbol.ok { background:#eaf7f1; color:var(--green); }
+    .status-title h3 { margin:0; font-size:15px; }
+    .status-title p { margin:3px 0 0; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+    .status-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .asset-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .upload-row { display:flex; gap:8px; align-items:center; }
+    .file-input { min-width:0; flex:1; }
+    .asset-list { display:grid; gap:7px; margin-top:12px; }
+    .asset-item { min-height:38px; display:flex; align-items:center; gap:9px; padding:7px 10px; border:1px solid #e4e8eb; border-radius:6px; color:#535c66; }
+    .asset-item span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .data-path { display:flex; align-items:center; gap:8px; min-width:0; margin-bottom:14px; padding:9px 11px; border:1px solid #e3e7eb; border-radius:7px; background:#f8fafb; color:var(--muted); font-size:11px; }
+    .data-path code { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#444d57; }
+    .preview-layout { display:grid; grid-template-columns:minmax(280px,.7fr) minmax(320px,1.3fr); gap:16px; }
+    .preview-controls { display:grid; gap:12px; align-content:start; }
+    .preview-stage { min-height:360px; display:grid; place-items:center; overflow:auto; padding:16px; border:1px solid var(--line); border-radius:7px; background:#eef1f4; }
+    .preview-stage img { display:block; max-width:100%; height:auto; border-radius:6px; box-shadow:0 6px 22px rgba(31,35,41,.12); }
+    .override-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr 1.2fr auto; gap:10px; align-items:end; }
+    dialog { width:min(390px,calc(100% - 28px)); border:1px solid var(--line); border-radius:8px; padding:0; color:var(--ink); box-shadow:var(--shadow); }
+    dialog::backdrop { background:rgba(24,28,33,.58); }
+    .dialog-head { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:52px; padding:10px 14px; border-bottom:1px solid var(--line); }
+    .dialog-head h3 { margin:0; font-size:14px; }
+    .dialog-body { padding:18px; text-align:center; }
+    .dialog-body img { width:280px; max-width:100%; aspect-ratio:1; display:block; margin:0 auto 12px; border:1px solid #edf0f2; }
+    .dialog-status { color:var(--muted); font-size:12px; }
+    .toast-stack { position:fixed; top:84px; right:20px; z-index:80; display:grid; gap:8px; width:min(360px,calc(100% - 40px)); }
+    .toast { display:flex; align-items:flex-start; gap:9px; padding:11px 13px; border:1px solid #323840; border-radius:7px; background:#262b31; color:#fff; box-shadow:var(--shadow); }
+    .toast.success { border-color:#146d4f; background:#126346; }
+    .toast.error { border-color:#9e2b3f; background:#8f293a; }
+    .toast span { min-width:0; overflow-wrap:anywhere; }
+    .group-picker-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; max-height:460px; overflow:auto; }
+    .group-picker-card { min-width:0; display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:7px; padding:10px; background:#fff; text-align:left; }
+    .group-picker-card:hover { border-color:var(--cyan); background:#f6fbfd; }
+    .group-picker-card .avatar { width:40px; height:40px; }
+    .group-picker-card div { min-width:0; }
+    .group-picker-card strong,.group-picker-card span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .group-picker-card span { color:var(--muted); font-size:10px; }
+    .runtime-form { display:grid; gap:12px; }
+    .check-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; }
+    .check-row input { width:18px; height:18px; accent-color:var(--green); }
+    .mobile-brand { display:none; }
+    @media (max-width:1100px) {
+      .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .group-grid { grid-template-columns:1fr; }
+      .override-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .override-grid .button { align-self:end; }
+    }
+    @media (max-width:820px) {
+      :root { --sidebar-width:0px; }
+      .sidebar { inset:auto 0 0; width:100%; height:68px; display:block; border:0; border-top:1px solid #181b20; }
+      .brand,.sidebar-footer { display:none; }
+      .nav { height:68px; grid-template-columns:repeat(5,1fr); gap:0; padding:5px 6px; }
+      .nav-button { min-height:56px; flex-direction:column; justify-content:center; gap:3px; padding:4px; font-size:10px; text-align:center; }
+      .nav-button.active { box-shadow:inset 0 3px 0 var(--brand); }
+      .nav-badge { display:none; }
+      .main { margin-left:0; padding-bottom:68px; }
+      .topbar { height:62px; padding:0 16px; }
+      .mobile-brand { display:flex; align-items:center; gap:8px; }
+      .mobile-brand .brand-mark { width:30px; height:30px; font-size:15px; }
+      .topbar-title h1 { font-size:16px; }
+      .topbar-title p { display:none; }
+      .content { padding:18px 14px 32px; }
+      .overview-grid,.account-panel { grid-template-columns:1fr; }
+      .add-grid { grid-template-columns:1fr 1fr; }
+      .add-grid .button { min-height:38px; }
+      .asset-grid { grid-template-columns:1fr; }
+      .preview-layout { grid-template-columns:1fr; }
+      .override-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:560px) {
+      .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .stat { min-height:94px; padding:13px; gap:10px; }
+      .stat-icon { width:36px; height:36px; }
+      .stat-value { font-size:20px; }
+      .page-heading { align-items:flex-start; }
+      .add-grid,.form-grid,.override-grid { grid-template-columns:1fr; }
+      .form-grid .full { grid-column:auto; }
+      .atall-panel { margin-left:0; }
+      .atall-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .render-category-grid { grid-template-columns:1fr; gap:12px; }
+      .render-category,.render-category:first-child,.render-category:last-child { padding:12px 0 0; border-left:0; border-top:1px solid #e7eaed; }
+      .render-category:first-child { padding-top:0; border-top:0; }
+      .up-head .button { width:32px; }
+      .upload-row { align-items:stretch; flex-direction:column; }
+      .group-picker-grid { grid-template-columns:1fr; }
+      .topbar-actions .button:not(.icon-only) { width:36px; padding:0; font-size:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">B</div>
+        <div class="brand-title"><strong>Bilibili 订阅</strong><span>NoneBot2 控制台</span></div>
+      </div>
+      <nav class="nav" aria-label="管理导航">
+        <button class="nav-button active" data-page="overview"><i data-lucide="layout-dashboard" class="icon"></i><span>概览</span></button>
+        <button class="nav-button" data-page="subscriptions"><i data-lucide="rss" class="icon"></i><span>订阅</span><span id="navSubCount" class="nav-badge">0</span></button>
+        <button class="nav-button" data-page="manual"><i data-lucide="send" class="icon"></i><span>手动推送</span></button>
+        <button class="nav-button" data-page="assets"><i data-lucide="palette" class="icon"></i><span>资源</span></button>
+        <button class="nav-button" data-page="account"><i data-lucide="key-round" class="icon"></i><span>登录</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="account-row">
+          <span id="sideCookieDot" class="account-dot"></span>
+          <div class="account-copy"><strong>Bilibili Cookie</strong><span id="sideCookieText">检查中</span></div>
+          <button class="button icon-only compact" title="退出管理后台" aria-label="退出管理后台" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="mobile-brand"><div class="brand-mark">B</div></div>
+        <div class="topbar-title"><h1 id="pageTitle">运行概览</h1><p id="pageSubtitle">订阅与推送状态</p></div>
+        <div class="topbar-actions">
+          <span id="cookieBadge" class="badge warn"><i data-lucide="circle-alert" class="icon-sm"></i>未登录</span>
+          <button class="button icon-only" title="刷新数据" aria-label="刷新数据" onclick="loadState(true)"><i data-lucide="refresh-cw" class="icon"></i></button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section id="page-overview" class="page active">
+          <div class="stat-grid">
+            <article class="stat"><div class="stat-icon pink"><i data-lucide="messages-square" class="icon"></i></div><div><span id="statGroups" class="stat-value">0</span><span class="stat-label">订阅群</span></div></article>
+            <article class="stat"><div class="stat-icon blue"><i data-lucide="users" class="icon"></i></div><div><span id="statUps" class="stat-value">0</span><span class="stat-label">UP 订阅</span></div></article>
+            <article class="stat"><div class="stat-icon green"><i data-lucide="scan-search" class="icon"></i></div><div><span id="statFilters" class="stat-value">0</span><span class="stat-label">过滤规则</span></div></article>
+            <article class="stat"><div class="stat-icon amber"><i data-lucide="at-sign" class="icon"></i></div><div><span id="statAtall" class="stat-value">0</span><span class="stat-label">@全体 开关</span></div></article>
+          </div>
+          <div class="overview-grid">
+            <section class="panel"><div class="panel-head"><h3>订阅分布</h3><button class="button compact" onclick="switchPage('subscriptions')"><i data-lucide="arrow-right" class="icon-sm"></i>管理订阅</button></div><div id="overviewGroups" class="panel-body group-summary-list"></div></section>
+            <section class="panel"><div class="panel-head"><h3>运行参数</h3><button class="button icon-only compact" title="修改运行配置" aria-label="修改运行配置" onclick="openRuntimeDialog()"><i data-lucide="settings-2" class="icon-sm"></i></button></div><div class="panel-body runtime-list"><div class="runtime-row"><span class="runtime-label"><i data-lucide="radio" class="icon-sm"></i>动态轮询</span><strong id="dynamicInterval">--</strong></div><div class="runtime-row"><span class="runtime-label"><i data-lucide="radio-tower" class="icon-sm"></i>直播轮询</span><strong id="liveInterval">--</strong></div><div class="runtime-row"><span class="runtime-label"><i data-lucide="file-code-2" class="icon-sm"></i>模板</span><strong id="templateCount">0</strong></div><div class="runtime-row"><span class="runtime-label"><i data-lucide="type" class="icon-sm"></i>字体</span><strong id="fontCount">0</strong></div></div></section>
+          </div>
+        </section>
+
+        <section id="page-subscriptions" class="page">
+          <section class="panel"><div class="panel-body"><form id="addForm" class="add-grid"><div class="field"><label>目标群聊</label><input id="addGroupId" name="group_id" type="hidden"><input id="addGroupName" name="group_name" type="hidden"><button id="selectedGroup" class="selected-group empty" type="button" onclick="openGroupPicker()"><i data-lucide="scan-search" class="icon"></i><span>扫描并选择群聊</span></button></div><div class="field"><label for="addUid">UP 主 UID</label><input id="addUid" class="input" name="uid" inputmode="numeric" required></div><button class="button primary" type="submit"><i data-lucide="plus" class="icon-sm"></i>添加订阅</button></form></div></section>
+          <div class="search-row"><div class="search-wrap"><i data-lucide="search" class="icon"></i><input id="subscriptionSearch" class="input" placeholder="搜索群名称、群号、UP 主或 UID"></div><span id="searchCount" class="badge">0 项</span></div>
+          <div id="groups" class="group-grid"></div>
+        </section>
+
+        <section id="page-manual" class="page">
+          <section class="panel"><div class="panel-body"><form id="pushForm" class="form-grid"><div class="field full"><label>内容类型</label><div class="segmented"><label><input type="radio" name="kind" value="dynamic" checked><span><i data-lucide="newspaper" class="icon-sm"></i>动态</span></label><label><input type="radio" name="kind" value="video"><span><i data-lucide="video" class="icon-sm"></i>视频</span></label><label><input type="radio" name="kind" value="live"><span><i data-lucide="radio-tower" class="icon-sm"></i>直播</span></label></div></div><div class="field"><label for="pushGroup">目标群</label><select id="pushGroup" class="select" name="group_id" required></select></div><div class="field"><label for="pushIdentifier">动态号 / AV、BV 号 / 直播间号</label><input id="pushIdentifier" class="input" name="identifier" required></div><div class="full"><button id="pushSubmit" class="button primary" type="submit"><i data-lucide="send" class="icon-sm"></i>立即推送</button></div></form></div></section>
+        </section>
+
+        <section id="page-assets" class="page">
+          <div class="asset-grid">
+            <section class="panel"><div class="panel-head"><h3>字体</h3><span id="fontBadge" class="badge">0</span></div><div class="panel-body"><form id="fontForm" class="upload-row"><input class="file-input" name="file" type="file" accept=".ttf,.otf,.woff,.woff2" required><button class="button" type="submit"><i data-lucide="upload" class="icon-sm"></i>上传</button></form><div id="fontList" class="asset-list"></div></div></section>
+            <section class="panel"><div class="panel-head"><h3>HTML 模板</h3><span id="templateBadge" class="badge">0</span></div><div class="panel-body"><form id="templateForm" class="upload-row"><input class="file-input" name="file" type="file" accept=".html,.htm" required><button class="button" type="submit"><i data-lucide="upload" class="icon-sm"></i>上传</button></form><div id="templateList" class="asset-list"></div></div></section>
+          </div>
+          <section class="panel" style="margin-top:16px"><div class="panel-head"><h3>真实内容组合预览</h3><button id="previewButton" class="button compact primary" onclick="renderPreview()"><i data-lucide="image" class="icon-sm"></i>生成预览</button></div><div class="panel-body"><div id="dataPath" class="data-path"><i data-lucide="folder-open" class="icon-sm"></i><code></code></div><div class="preview-layout"><div class="preview-controls"><div class="field"><label for="previewKind">内容类型</label><select id="previewKind" class="select" onchange="updatePreviewIdentifier()"><option value="dynamic">动态</option><option value="video">视频</option><option value="live">直播</option></select></div><div class="field"><label id="previewIdentifierLabel" for="previewIdentifier">动态号</label><input id="previewIdentifier" class="input" placeholder="输入动态号，留空使用示例内容"></div><div class="field"><label for="previewTemplate">模板</label><select id="previewTemplate" class="select"><option value="">内置模板</option></select></div><div class="field"><label for="previewFont">字体</label><select id="previewFont" class="select"><option value="">默认字体</option></select></div><div class="field"><label for="previewColor">卡片配色</label><div class="color-row"><input id="previewColor" class="color-input" type="color" value="#fb7299"><input id="previewGradientColor" class="color-input gradient-color" type="color" value="#b8def5" hidden><label class="gradient-toggle"><input id="previewGradientEnabled" type="checkbox" onchange="togglePreviewGradient()"><span>渐变</span></label></div></div></div><div id="previewStage" class="preview-stage"><div class="empty"><div><div class="empty-icon"><i data-lucide="image" class="icon"></i></div><strong>等待预览</strong><span>输入真实内容编号可检查实际标题、封面与正文</span></div></div></div></div></div></section>
+        </section>
+
+        <section id="page-account" class="page">
+          <div class="account-panel">
+            <section id="accountStatusBox" class="status-box"><div class="status-title"><div id="accountStatusSymbol" class="status-symbol"><i data-lucide="circle-alert" class="icon"></i></div><div><h3 id="accountStatusTitle">未登录</h3><p id="accountStatusText">未配置 Cookie</p></div></div><div class="status-actions"><button class="button primary" onclick="startQrLogin()"><i data-lucide="qr-code" class="icon-sm"></i>扫码登录</button></div></section>
+            <section class="panel"><div class="panel-head"><h3>Cookie</h3></div><div class="panel-body"><form id="cookieForm" class="field"><label for="cookie">Cookie 字符串</label><input id="cookie" class="input" autocomplete="off" placeholder="SESSDATA=...; bili_jct=..."><div><button class="button" type="submit"><i data-lucide="save" class="icon-sm"></i>保存 Cookie</button></div></form></div></section>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="qrDialog"><div class="dialog-head"><h3>使用哔哩哔哩客户端扫码</h3><button class="button icon-only compact" title="关闭" aria-label="关闭" onclick="closeQrDialog()"><i data-lucide="x" class="icon"></i></button></div><div class="dialog-body"><img id="qrImage" alt="登录二维码"><div id="qrStatus" class="dialog-status">等待扫码</div></div></dialog>
+  <dialog id="groupPickerDialog"><div class="dialog-head"><h3>选择目标群聊</h3><div class="toolbar"><button class="button icon-only compact" title="重新扫描" aria-label="重新扫描" onclick="scanGroups(true)"><i data-lucide="refresh-cw" class="icon-sm"></i></button><button class="button icon-only compact" title="关闭" aria-label="关闭" onclick="document.getElementById('groupPickerDialog').close()"><i data-lucide="x" class="icon"></i></button></div></div><div class="dialog-body"><div id="groupPickerGrid" class="group-picker-grid"></div></div></dialog>
+  <dialog id="runtimeDialog"><div class="dialog-head"><h3>运行配置</h3><button class="button icon-only compact" title="关闭" aria-label="关闭" onclick="document.getElementById('runtimeDialog').close()"><i data-lucide="x" class="icon"></i></button></div><div class="dialog-body" style="text-align:left"><form id="runtimeForm" class="runtime-form"><div class="field"><label for="runtimeDynamicInterval">动态轮询间隔（秒）</label><input id="runtimeDynamicInterval" class="input" name="dynamic_interval" type="number" min="30" max="86400" required></div><div class="field"><label for="runtimeLiveInterval">直播轮询间隔（秒）</label><input id="runtimeLiveInterval" class="input" name="live_interval" type="number" min="10" max="86400" required></div><label class="check-row"><span>启用动态轮询</span><input id="runtimeEnableDynamic" name="enable_dynamic" type="checkbox"></label><label class="check-row"><span>启用直播轮询</span><input id="runtimeEnableLive" name="enable_live" type="checkbox"></label><button class="button primary" type="submit"><i data-lucide="save" class="icon-sm"></i>保存运行配置</button></form></div></dialog>
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+  <script>
+    const base = location.pathname.replace(/\/$/, '');
+    const token = new URLSearchParams(location.search).get('token') || '';
+    const headers = {'Content-Type':'application/json','X-Bili-Token':token};
+    const titles = {
+      overview:['运行概览','订阅与推送状态'],
+      subscriptions:['订阅管理','群聊、UP 主与推送规则'],
+      manual:['手动推送','按内容编号推送到指定群'],
+      assets:['渲染资源','字体、模板与覆盖规则'],
+      account:['Bilibili 登录','扫码登录与 Cookie 管理']
+    };
+    const kindLabels = {all:'全部',dynamic:'动态',video:'视频',music:'音乐',article:'专栏',live:'直播'};
+    const renderKinds = {
+      dynamic:{label:'动态',icon:'newspaper',color:'#fb7299',gradient:'#b8def5'},
+      video:{label:'视频',icon:'video',color:'#008fbd',gradient:'#7dd3fc'},
+      live:{label:'直播',icon:'radio-tower',color:'#c9364f',gradient:'#fb7185'}
+    };
+    const atallMeta = {
+      all:{icon:'megaphone',description:'动态与直播',color:'#8b5cf6'},
+      dynamic:{icon:'newspaper',description:'普通动态',color:'#008fbd'},
+      video:{icon:'video',description:'视频投稿',color:'#2563eb'},
+      music:{icon:'music-2',description:'音乐投稿',color:'#16825d'},
+      article:{icon:'notebook-text',description:'专栏文章',color:'#b86800'},
+      live:{icon:'radio-tower',description:'开播通知',color:'#c9364f'}
+    };
+    let state = {groups:[],fonts:[],templates:[],config:{}};
+    let scannedGroups = [];
+    let groupsScanned = false;
+    let qrPollTimer = null;
+    let activePage = 'overview';
+    const el = id => document.getElementById(id);
+    const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    const safeArg = value => encodeURIComponent(String(value)).replace(/'/g,'%27');
+    const icon = (name, className='icon-sm') => `<i data-lucide="${name}" class="${className}"></i>`;
+    const refreshIcons = () => { if(window.lucide) window.lucide.createIcons(); };
+
+    async function api(path, options={}) {
+      options.headers = options.body instanceof FormData ? {'X-Bili-Token':token} : {...headers,...options.headers};
+      const response = await fetch(base + path, options);
+      if(response.status === 401){ location.href = base + '/login'; throw new Error('登录已失效'); }
+      if(!response.ok){ const body=await response.json().catch(()=>({})); throw new Error(body.detail || response.statusText); }
+      return response.json();
+    }
+
+    function toast(message,type='') {
+      const node=document.createElement('div');
+      node.className=`toast ${type}`;
+      node.innerHTML=`${icon(type==='error'?'circle-alert':'circle-check')}<span>${esc(message)}</span>`;
+      el('toastStack').appendChild(node);
+      refreshIcons();
+      setTimeout(()=>node.remove(),3600);
+    }
+
+    function switchPage(page) {
+      activePage=page;
+      document.querySelectorAll('.nav-button').forEach(button=>button.classList.toggle('active',button.dataset.page===page));
+      document.querySelectorAll('.page').forEach(node=>node.classList.toggle('active',node.id===`page-${page}`));
+      el('pageTitle').textContent=titles[page][0];
+      el('pageSubtitle').textContent=titles[page][1];
+      window.scrollTo({top:0,behavior:'smooth'});
+      refreshIcons();
+      if(page==='subscriptions' && !groupsScanned) scanGroups(false);
+    }
+
+    function cookieConfigured() { return String(state.cookie || '').startsWith('已配置'); }
+    function groupAvatar(group) { return group.avatar || `https://p.qlogo.cn/gh/${group.group_id}/${group.group_id}/100`; }
+
+    function renderStatus() {
+      const ready=cookieConfigured();
+      el('cookieBadge').className=`badge ${ready?'ok':'warn'}`;
+      el('cookieBadge').innerHTML=`${icon(ready?'circle-check':'circle-alert')}${ready?'已登录':'未登录'}`;
+      el('sideCookieDot').className=`account-dot ${ready?'online':''}`;
+      el('sideCookieText').textContent=ready?'已配置':'未配置';
+      el('accountStatusSymbol').className=`status-symbol ${ready?'ok':''}`;
+      el('accountStatusSymbol').innerHTML=icon(ready?'shield-check':'circle-alert','icon');
+      el('accountStatusTitle').textContent=ready?'登录有效':'未登录';
+      el('accountStatusText').textContent=state.cookie || '未配置 Cookie';
+    }
+
+    function renderOverview() {
+      const groups=state.groups || [];
+      const subscriptions=groups.flatMap(group=>group.subscriptions || []);
+      const filters=groups.reduce((sum,group)=>sum+(group.filters || []).length,0);
+      const switches=groups.reduce((sum,group)=>sum+Object.values(group.atall || {}).reduce((count,kinds)=>count+kinds.length,0),0);
+      el('statGroups').textContent=groups.length;
+      el('statUps').textContent=subscriptions.length;
+      el('statFilters').textContent=filters;
+      el('statAtall').textContent=switches;
+      el('navSubCount').textContent=subscriptions.length;
+      el('dynamicInterval').textContent=state.config.enable_dynamic===false?'已停用':`${state.config.dynamic_interval || '--'} 秒`;
+      el('liveInterval').textContent=state.config.enable_live===false?'已停用':`${state.config.live_interval || '--'} 秒`;
+      el('templateCount').textContent=state.templates.length;
+      el('fontCount').textContent=state.fonts.length;
+      el('overviewGroups').innerHTML=groups.length ? groups.map(group=>`<div class="summary-row"><img class="avatar" src="${esc(groupAvatar(group))}" alt="" referrerpolicy="no-referrer" onerror="this.style.opacity='0'"><div class="summary-main"><strong>${esc(group.name || `QQ群 ${group.group_id}`)}</strong><span>${group.group_id}</span></div><span class="badge">${(group.subscriptions || []).length} 位 UP</span></div>`).join('') : emptyMarkup('rss','暂无订阅','订阅群会显示在这里');
+    }
+
+    function atallSwitches(group,up) {
+      const enabled=new Set((group.atall || {})[String(up.uid)] || []);
+      const options=Object.entries(kindLabels).map(([kind,label])=>{const meta=atallMeta[kind];return `<label class="atall-option" style="--atall-color:${meta.color}"><input type="checkbox" ${enabled.has(kind)?'checked':''} onchange="setAtall(${group.group_id},${up.uid},'${kind}',this.checked)"><span class="atall-tile"><span class="atall-kind-icon">${icon(meta.icon)}</span><span class="atall-copy"><strong>${label}</strong><span>${meta.description}</span></span><span class="atall-toggle"></span></span></label>`;}).join('');
+      return `<div class="atall-panel"><div class="atall-head">${icon('at-sign')}<strong>@全体提醒</strong><span>${enabled.size ? `${enabled.size} 项已开启` : '当前均关闭'}</span></div><div class="atall-grid">${options}</div></div>`;
+    }
+
+    function exactOverride(group,kind) {
+      return (group.overrides || []).find(item=>Number(item.uid)===0 && item.kind===kind) || null;
+    }
+
+    function assetOptions(items,selected,emptyLabel) {
+      return `<option value="">${esc(emptyLabel)}</option>`+items.map(name=>`<option value="${esc(name)}" ${name===selected?'selected':''}>${esc(name)}</option>`).join('');
+    }
+
+    function renderCategoryEditor(group,kind) {
+      const current=exactOverride(group,kind) || {};
+      const meta=renderKinds[kind];
+      const suffix=`${group.group_id}-${kind}`;
+      const gradientEnabled=Boolean(current.gradient_color);
+      return `<section class="render-category" style="--render-color:${meta.color}"><div class="render-category-head">${icon(meta.icon)}<strong>${meta.label}</strong></div><div class="field"><label for="override-template-${suffix}">模板</label><select id="override-template-${suffix}" class="select">${assetOptions(state.templates,current.template_name,'内置模板')}</select></div><div class="field"><label for="override-font-${suffix}">字体</label><select id="override-font-${suffix}" class="select">${assetOptions(state.fonts,current.font_name,'默认字体')}</select></div><div class="field"><label for="override-color-${suffix}">卡片配色</label><div class="color-row"><input id="override-color-${suffix}" class="color-input" type="color" value="${current.color || meta.color}"><input id="override-gradient-${suffix}" class="color-input gradient-color" type="color" value="${current.gradient_color || meta.gradient}" ${gradientEnabled?'':'hidden'}><label class="gradient-toggle"><input id="override-gradient-enabled-${suffix}" type="checkbox" ${gradientEnabled?'checked':''} onchange="toggleOverrideGradient('${suffix}')"><span>渐变</span></label></div></div><button class="button compact render-save" onclick="saveCardOverride(${group.group_id},'${kind}')">${icon('save')}保存${meta.label}方案</button></section>`;
+    }
+
+    function overrideEditor(group) {
+      return `<details class="render-editor"><summary>${icon('paintbrush')}<span>本群渲染方案</span><span class="badge">动态 · 视频 · 直播</span></summary><div class="render-category-grid">${Object.keys(renderKinds).map(kind=>renderCategoryEditor(group,kind)).join('')}</div></details>`;
+    }
+
+    function toggleOverrideGradient(suffix) {
+      el(`override-gradient-${suffix}`).hidden=!el(`override-gradient-enabled-${suffix}`).checked;
+    }
+
+    async function saveCardOverride(groupId,kind) {
+      const suffix=`${groupId}-${kind}`;
+      const gradientEnabled=el(`override-gradient-enabled-${suffix}`).checked;
+      await action(()=>api('/api/overrides',{method:'POST',body:JSON.stringify({
+        group_id:groupId,
+        kind,
+        template_name:el(`override-template-${suffix}`).value || null,
+        font_name:el(`override-font-${suffix}`).value || null,
+        color:el(`override-color-${suffix}`).value,
+        gradient_color:gradientEnabled ? el(`override-gradient-${suffix}`).value : null
+      })}),'渲染设置已保存');
+    }
+
+    function groupCard(group) {
+      const ups=(group.subscriptions || []).map(up=>`<div class="up-item"><div class="up-head"><img class="avatar" src="${esc(up.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.style.opacity='0'"><div class="up-copy"><strong>${esc(up.uname || `UID ${up.uid}`)}</strong><span>UID ${up.uid}</span></div><button class="button icon-only compact danger" title="删除订阅" aria-label="删除订阅" onclick="removeSub(${group.group_id},${up.uid})">${icon('trash-2')}</button></div>${atallSwitches(group,up)}</div>`).join('');
+      const chips=(group.filters || []).map(pattern=>`<span class="chip"><span>${esc(pattern)}</span><button title="删除过滤词" aria-label="删除过滤词" onclick="removeFilter(${group.group_id},'${safeArg(pattern)}')">${icon('x','icon-sm')}</button></span>`).join('');
+      return `<article class="group-card" data-search="${esc(`${group.name || ''} ${group.group_id} ${(group.subscriptions || []).map(up=>`${up.uname || ''} ${up.uid}`).join(' ')}`.toLowerCase())}"><div class="group-card-head"><img class="avatar" src="${esc(groupAvatar(group))}" alt="" referrerpolicy="no-referrer" onerror="this.style.opacity='0'"><div class="group-meta"><strong>${esc(group.name || `QQ群 ${group.group_id}`)}</strong><span>${group.group_id}</span></div><span class="badge">${(group.subscriptions || []).length} 位 UP</span></div>${overrideEditor(group)}<div class="up-list">${ups || emptyMarkup('user-round-x','暂无 UP 主','')}</div><div class="filters"><div class="filter-form"><input id="filter-${group.group_id}" class="input" placeholder="正则过滤词"><button class="button compact" onclick="addFilter(${group.group_id})">${icon('plus')}添加</button></div><div class="chip-row">${chips || '<span class="badge">无过滤规则</span>'}</div></div></article>`;
+    }
+
+    function emptyMarkup(iconName,title,subtitle) {
+      return `<div class="empty"><div><div class="empty-icon">${icon(iconName,'icon')}</div><strong>${esc(title)}</strong>${subtitle?`<span>${esc(subtitle)}</span>`:''}</div></div>`;
+    }
+
+    function renderSubscriptions() {
+      el('groups').innerHTML=state.groups.length ? state.groups.map(groupCard).join('') : emptyMarkup('rss','暂无订阅','添加群号和 UP 主 UID');
+      filterSubscriptions();
+    }
+
+    function renderSelects() {
+      const groupOptions=state.groups.map(group=>`<option value="${group.group_id}">${esc(group.name || `QQ群 ${group.group_id}`)}</option>`).join('');
+      el('pushGroup').innerHTML=groupOptions || '<option value="">暂无订阅群</option>';
+      el('pushGroup').disabled=!groupOptions;
+      el('pushSubmit').disabled=!groupOptions;
+      const selectedTemplate=el('previewTemplate').value;
+      const selectedFont=el('previewFont').value;
+      el('previewTemplate').innerHTML=assetOptions(state.templates,selectedTemplate,'内置模板');
+      el('previewFont').innerHTML=assetOptions(state.fonts,selectedFont,'默认字体');
+    }
+
+    function renderAssets() {
+      el('fontBadge').textContent=state.fonts.length;
+      el('templateBadge').textContent=state.templates.length;
+      el('fontList').innerHTML=state.fonts.length ? state.fonts.map(name=>`<div class="asset-item">${icon('type')}<span>${esc(name)}</span></div>`).join('') : '<span class="badge">使用系统默认字体</span>';
+      el('templateList').innerHTML=state.templates.length ? state.templates.map(name=>`<div class="asset-item">${icon('file-code-2')}<span>${esc(name)}</span></div>`).join('') : '<span class="badge">使用内置模板</span>';
+      el('dataPath').querySelector('code').textContent=state.data_dir || '';
+    }
+
+    function renderAll() {
+      renderStatus();
+      renderOverview();
+      renderSubscriptions();
+      renderSelects();
+      renderAssets();
+      refreshIcons();
+    }
+
+    async function loadState(notify=false) {
+      try { state=await api('/api/state'); renderAll(); if(notify) toast('数据已刷新','success'); }
+      catch(error) { toast(error.message,'error'); }
+    }
+
+    function filterSubscriptions() {
+      const query=el('subscriptionSearch').value.trim().toLowerCase();
+      const cards=[...document.querySelectorAll('.group-card')];
+      let visible=0;
+      cards.forEach(card=>{ const show=!query || card.dataset.search.includes(query); card.hidden=!show; if(show) visible+=1; });
+      el('searchCount').textContent=`${visible} 项`;
+    }
+
+    async function action(task,success) {
+      try { await task(); if(success) toast(success,'success'); await loadState(); }
+      catch(error) { toast(error.message,'error'); }
+    }
+
+    function renderGroupPicker() {
+      el('groupPickerGrid').innerHTML=scannedGroups.length ? scannedGroups.map((group,index)=>`<button class="group-picker-card" type="button" onclick="selectScannedGroup(${index})"><img class="avatar" src="${esc(group.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.style.opacity='0'"><div><strong>${esc(group.group_name || `QQ群 ${group.group_id}`)}</strong><span>${group.group_id}${group.member_count?` · ${group.member_count} 人`:''}</span></div></button>`).join('') : emptyMarkup('users','未扫描到群聊','请确认 OneBot V11 已连接');
+      refreshIcons();
+    }
+
+    async function scanGroups(force=false) {
+      if(groupsScanned && !force){renderGroupPicker();return;}
+      el('groupPickerGrid').innerHTML=emptyMarkup('loader-circle','正在扫描群聊','');
+      refreshIcons();
+      try {
+        const result=await api('/api/groups/scan');
+        scannedGroups=result.groups || [];
+        groupsScanned=true;
+        renderGroupPicker();
+      } catch(error) {
+        groupsScanned=false;
+        scannedGroups=(state.groups || []).map(group=>({group_id:group.group_id,group_name:group.name,avatar:groupAvatar(group)}));
+        renderGroupPicker();
+        toast(error.message,'error');
+      }
+    }
+
+    function openGroupPicker() {
+      el('groupPickerDialog').showModal();
+      scanGroups(false);
+    }
+
+    function selectScannedGroup(index) {
+      const group=scannedGroups[index];
+      if(!group)return;
+      el('addGroupId').value=group.group_id;
+      el('addGroupName').value=group.group_name || '';
+      el('selectedGroup').classList.remove('empty');
+      el('selectedGroup').innerHTML=`<img class="avatar" src="${esc(group.avatar)}" alt="" referrerpolicy="no-referrer"><span class="selected-group-copy"><strong>${esc(group.group_name || `QQ群 ${group.group_id}`)}</strong><span>${group.group_id}</span></span>${icon('chevrons-up-down')}`;
+      el('groupPickerDialog').close();
+      refreshIcons();
+      el('addUid').focus();
+    }
+
+    el('addForm').onsubmit=event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const data=Object.fromEntries(new FormData(form));
+      if(!Number(data.group_id)){toast('请先扫描并选择目标群聊','error');openGroupPicker();return;}
+      action(async()=>{
+        await api('/api/subscriptions',{method:'POST',body:JSON.stringify({group_id:+data.group_id,uid:+data.uid,group_name:data.group_name})});
+        form.elements.uid.value='';
+      },'订阅已保存');
+    };
+    async function removeSub(groupId,uid){ if(!confirm('确认删除该订阅？'))return; await action(()=>api(`/api/subscriptions/${groupId}/${uid}`,{method:'DELETE'}),'订阅已删除'); }
+    async function setAtall(groupId,uid,kind,enabled){ await action(()=>api('/api/atall',{method:'POST',body:JSON.stringify({group_id:groupId,uid,kind,enabled})}),'@全体 配置已更新'); }
+    async function addFilter(groupId){ const input=el(`filter-${groupId}`); const pattern=input.value.trim(); if(!pattern)return; await action(async()=>{await api('/api/filters',{method:'POST',body:JSON.stringify({group_id:groupId,pattern})});input.value='';},'过滤规则已添加'); }
+    async function removeFilter(groupId,pattern){ await action(()=>api(`/api/filters/${groupId}?pattern=${pattern}`,{method:'DELETE'}),'过滤规则已删除'); }
+
+    el('pushForm').onsubmit=event=>{ event.preventDefault(); const form=event.currentTarget; const data=Object.fromEntries(new FormData(form)); const button=form.querySelector('button[type="submit"]'); button.disabled=true; api('/api/push',{method:'POST',body:JSON.stringify({group_id:+data.group_id,kind:data.kind,identifier:data.identifier})}).then(result=>{toast(`已推送：${result.author} - ${result.title}`,'success');form.elements.identifier.value='';}).catch(error=>toast(error.message,'error')).finally(()=>button.disabled=false); };
+
+    el('cookieForm').onsubmit=event=>{ event.preventDefault(); const value=el('cookie').value.trim(); if(!value)return; action(async()=>{await api('/api/cookie',{method:'POST',body:JSON.stringify({cookie:value})});el('cookie').value='';},'Cookie 已保存'); };
+    async function logout(){ try{await api('/api/logout',{method:'POST'});}finally{location.href=base+'/login';} }
+
+    async function upload(form,path,label){ const data=new FormData(form); await action(async()=>{await api(path,{method:'POST',body:data});form.reset();},`${label}已上传`); }
+    el('fontForm').onsubmit=event=>{event.preventDefault();upload(event.currentTarget,'/api/upload/font','字体')};
+    el('templateForm').onsubmit=event=>{event.preventDefault();upload(event.currentTarget,'/api/upload/template','模板')};
+
+    function openRuntimeDialog() {
+      el('runtimeDynamicInterval').value=state.config.dynamic_interval || 120;
+      el('runtimeLiveInterval').value=state.config.live_interval || 30;
+      el('runtimeEnableDynamic').checked=state.config.enable_dynamic!==false;
+      el('runtimeEnableLive').checked=state.config.enable_live!==false;
+      el('runtimeDialog').showModal();
+    }
+
+    el('runtimeForm').onsubmit=event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const button=form.querySelector('button[type="submit"]');
+      button.disabled=true;
+      api('/api/runtime',{method:'POST',body:JSON.stringify({
+        dynamic_interval:Number(el('runtimeDynamicInterval').value),
+        live_interval:Number(el('runtimeLiveInterval').value),
+        enable_dynamic:el('runtimeEnableDynamic').checked,
+        enable_live:el('runtimeEnableLive').checked
+      })}).then(async()=>{
+        el('runtimeDialog').close();
+        toast('运行配置已保存','success');
+        await loadState();
+      }).catch(error=>toast(error.message,'error')).finally(()=>button.disabled=false);
+    };
+
+    function updatePreviewIdentifier() {
+      const kind=el('previewKind').value;
+      const config={
+        dynamic:{label:'动态号',placeholder:'输入动态号，留空使用示例内容'},
+        video:{label:'视频号',placeholder:'输入 AV 号或 BV 号，留空使用示例内容'},
+        live:{label:'直播间号',placeholder:'输入直播间号，留空使用示例内容'}
+      }[kind];
+      el('previewIdentifierLabel').textContent=config.label;
+      el('previewIdentifier').placeholder=config.placeholder;
+      el('previewColor').value=renderKinds[kind].color;
+      el('previewGradientColor').value=renderKinds[kind].gradient;
+    }
+
+    function togglePreviewGradient() {
+      el('previewGradientColor').hidden=!el('previewGradientEnabled').checked;
+    }
+
+    async function renderPreview() {
+      const button=el('previewButton');
+      button.disabled=true;
+      el('previewStage').innerHTML=emptyMarkup('loader-circle','正在生成预览','首次渲染可能需要几秒');
+      refreshIcons();
+      try {
+        const result=await api('/api/preview',{method:'POST',body:JSON.stringify({
+          kind:el('previewKind').value,
+          identifier:el('previewIdentifier').value.trim(),
+          template_name:el('previewTemplate').value || null,
+          font_name:el('previewFont').value || null,
+          color:el('previewColor').value,
+          gradient_color:el('previewGradientEnabled').checked ? el('previewGradientColor').value : null
+        })});
+        el('previewStage').innerHTML=`<img src="${result.image}" alt="模板与字体组合预览">`;
+      } catch(error) {
+        el('previewStage').innerHTML=emptyMarkup('image-off','预览生成失败',error.message);
+        toast(error.message,'error');
+        refreshIcons();
+      } finally {
+        button.disabled=false;
+      }
+    }
+
+    function stopQrPolling(){ if(qrPollTimer!==null){clearInterval(qrPollTimer);qrPollTimer=null;} }
+    function closeQrDialog(){ stopQrPolling(); el('qrDialog').close(); }
+    async function startQrLogin(){
+      stopQrPolling();
+      try {
+        const result=await api('/api/login/qr',{method:'POST'});
+        el('qrImage').src=result.image;
+        el('qrStatus').textContent='等待扫码';
+        el('qrDialog').showModal();
+        qrPollTimer=setInterval(async()=>{try{const status=await api(`/api/login/poll?key=${encodeURIComponent(result.key)}`);if(status.success){stopQrPolling();await loadState();el('qrStatus').textContent=cookieConfigured()?'登录成功，Cookie 已配置':'登录成功，正在刷新状态';toast('Bilibili 登录成功','success');}else if(status.code===0){stopQrPolling();el('qrStatus').textContent=status.message;toast(status.message,'error');}else if(status.code===86038){stopQrPolling();el('qrStatus').textContent='二维码已失效';}}catch(error){stopQrPolling();el('qrStatus').textContent=error.message;}},2000);
+      } catch(error) { toast(error.message,'error'); }
+    }
+
+    document.querySelector('.nav').addEventListener('click',event=>{const button=event.target.closest('.nav-button');if(button)switchPage(button.dataset.page);});
+    el('subscriptionSearch').addEventListener('input',filterSubscriptions);
+    refreshIcons();
+    updatePreviewIdentifier();
+    loadState();
+  </script>
+</body>
+</html>

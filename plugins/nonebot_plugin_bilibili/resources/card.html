@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    {{ font_css | safe }}
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body { color: #202124; font-family: "Microsoft YaHei", sans-serif; }
+    #bili-card { width: 700px; background: #fff; border: 1px solid #e5e7eb; }
+    .accent { height: 5px; background: var(--bili-accent, #fb7299); }
+    .header { display: flex; align-items: center; gap: 14px; padding: 24px 28px 18px; }
+    .avatar { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; background: #f3f4f6; }
+    .author { font-size: 21px; font-weight: 700; }
+    .kind { margin-top: 4px; color: #6b7280; font-size: 14px; }
+    .body { padding: 0 28px 24px; }
+    h1 { margin: 0 0 12px; font-size: 25px; line-height: 1.4; letter-spacing: 0; }
+    .text { color: #374151; font-size: 18px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .cover { display: block; width: 100%; max-height: 430px; object-fit: cover; margin-top: 18px; border-radius: 6px; }
+    .footer { padding: 14px 28px; background: #f8fafc; color: #64748b; font-size: 14px; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <article id="bili-card">
+    <div class="accent"></div>
+    <header class="header">
+      {% if content.author_avatar %}<img class="avatar" src="{{ content.author_avatar }}" alt="">{% endif %}
+      <div>
+        <div class="author">{{ content.author_name }}</div>
+        <div class="kind">{{ content.kind.value }}</div>
+      </div>
+    </header>
+    <section class="body">
+      <h1>{{ content.title }}</h1>
+      {% if content.text %}<div class="text">{{ content.text }}</div>{% endif %}
+      {% if content.cover %}<img class="cover" src="{{ content.cover }}" alt="">{% endif %}
+    </section>
+    <footer class="footer">{{ content.url }}</footer>
+  </article>
+</body>
+</html>
