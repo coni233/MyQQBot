@@ -1,4 +1,4 @@
-# 我的 QQ 机器人：功能、规划与技术路线
+# 我的 QQ 机器人
 
 ## 功能与使用
 
@@ -91,6 +91,53 @@ B 站订阅推送：
 
 还支持 @全体、关键词过滤、手动推送动态/视频/直播等，完整命令见 `/bili help`。
 
+### 🤖 /autospk —— 定时自动发言（仅超管）
+
+可设置定时任务，让机器人按指定时间自动发送消息，支持群聊和私聊：
+
+#### 总开关
+
+```
+autospk on       开启自动发言
+autospk off      关闭自动发言
+autospk reload   重新加载配置
+```
+
+- 默认关闭：添加任务后需要先执行 `/autospk on`，否则任务不会定时发送。
+
+#### 添加循环任务
+
+```
+autospk add <group|private> <目标> <HH:MM> <消息1>|<消息2>|... [days=...]
+```
+
+- 目标：群聊用群号或 `here`（当前群），私聊用 QQ 号或 `me`（自己）
+- 时间：24 小时制，如 `09:00`、`21:30`
+- 多条消息用 `|` 分隔，发送时随机取一条
+- `days=` 指定星期几，不写则每天发送
+- 消息内容可直接附带图片，插件自动保存到图片目录并在发送时带上
+
+#### 添加一次性任务
+
+```
+autospk addonce <group|private> <目标> <YYYY-MM-DD> <HH:MM> <消息>
+```
+
+
+例如：
+
+```
+/autospk add group here 09:00 早上好|大家早上好|起床啦
+/autospk add group here 09:00 早上好，上班啦 days=workday
+/autospk addonce group here 2026-12-31 23:59 新年快乐
+/autospk list / del / edit / preview ...
+```
+
+- 循环任务：每天或指定星期几定时发送，多条消息随机取一条
+- 一次性任务：指定日期时间触发一次后自动删除
+- 消息支持占位符：`{date}`、`{time}`、`{weekday}`、`{days_until_cn:日期}`、`{image:...}` 等
+- 仅超级用户可用，发送 `/autospk` 可查看完整帮助
+
 ## 联系我
 
 - QQ：690379256
@@ -121,15 +168,12 @@ QQ ──► LLBot（QQ 协议端，OneBot V11 实现）
 
 ### 项目结构
 
-整个项目位于 `E:\Codefields\qqbot-nonebot-llbot\`：
-
 ```
 qqbot-nonebot-llbot/
 ├── LLBot-CLI-win-x64/      # QQ 协议端（llbot.exe，命令行版）
 ├── LLBot-Desktop-win-x64/  # QQ 协议端（桌面版，备用）
 ├── qqbot/                  # NoneBot2 项目
 │   ├── plugins/            # 本地插件（可自由修改）
-│   ├── third_party/        # GitHub 第三方插件源码（本地维护）
 │   ├── .env.prod           # 运行配置
 │   └── pyproject.toml      # 依赖与插件加载配置
 └── data/                   # 插件运行数据（订阅、Cookie 等）
@@ -168,7 +212,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 为了让插件能按个人需求随意修改、减少对环境的依赖，大部分插件直接以源码形式放在 `plugins/` 目录下，由 `plugin_dirs` 加载：
 
 - 自己开发的插件：退休倒计时、游戏日程查询、help 等
-- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、查成分（ddcheck）等
+- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、查成分（ddcheck）、定时自动发言（autospeak）等
 
 其中退休倒计时插件已发布到 PyPI（`nonebot-plugin-retirement-countdown`），商店审核通过后可通过 `nb plugin install` 一键安装。
 
@@ -191,6 +235,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 - [nonebot-plugin-htmlrender](https://github.com/nonebotjs/nonebot-plugin-htmlrender) —— 图片渲染
 - [nonebot-plugin-bilibili](https://github.com/coni233/nonebot-plugin-bilibili) —— B 站直播/动态订阅（fork 自上游开源项目，本地维护并已向上游提交 PR）
 - [nonebot-plugin-ddcheck](https://github.com/noneplugin/nonebot-plugin-ddcheck) —— B 站 VTuber 成分查询
+- [nonebot-plugin-autospeak](https://github.com/TangTangChu/nonebot-plugin-autospeak) —— 定时自动发言
 - [nonebot-plugin-roll](https://github.com/MinatoAquaCrews/nonebot_plugin_roll) —— 掷骰子（原作者 KafCoppelia）
 
 ## License

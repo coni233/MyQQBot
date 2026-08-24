@@ -16,6 +16,7 @@ dist/
 
 # NoneBot 运行时数据（订阅、Cookie、SQLite、浏览器登录态）
 data/
+config/
 cache/
 logs/
 *.sqlite3
