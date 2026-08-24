@@ -5,16 +5,35 @@ description = "qqbot"
 readme = "README.md"
 requires-python = ">=3.10, <4.0"
 dependencies = [
+    # NoneBot
     "nonebot2[fastapi]>=2.5.0",
     "nonebot-adapter-onebot>=2.4.6",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+
+    # NoneBot plugins
     "nonebot-plugin-status>=0.9.0",
     "nonebot-plugin-apscheduler>=0.5.0",
     "nonebot-plugin-localstore>=0.7.4",
     "nonebot-plugin-alconna<1.0.0,>=0.46.3",
-    "nonebot-plugin-htmlrender<1.0.0,>=0.4.0",
-    "httpx<1.0.0,>=0.20.0",
-    "Jinja2<4.0.0,>=3.0.0",
+
+    # htmlrender
+    # 0.5.1 is required by ddcheck's html_to_pic API and has been
+    # verified to work with the current Bilibili plugin.
+    "nonebot-plugin-htmlrender==0.5.1",
+
+    # Bilibili plugin runtime dependencies
+    "aiosqlite>=0.20.0",
+    "httpx>=0.28.0,<1.0.0",
+    "Jinja2>=3.0,<4.0",
+    "qrcode>=7.4",
+    "pillow>=9.1.0",
+    "pydantic>=2.0",
+    "playwright>=1.40",
+    "python-multipart>=0.0.9",
+    "regex>=2024.5.15",
 ]
+
 
 [tool.nonebot]
 plugin_dirs = ["plugins"]
@@ -31,3 +50,8 @@ nonebot-adapter-onebot = [
 nonebot-plugin-status = ["nonebot_plugin_status"]
 nonebot-plugin-apscheduler = ["nonebot_plugin_apscheduler"]
 nonebot-plugin-localstore = ["nonebot_plugin_localstore"]
+
+[dependency-groups]
+dev = [
+    "nb-cli>=1.7.4",
+]
