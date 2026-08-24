@@ -138,6 +138,20 @@ autospk addonce <group|private> <目标> <YYYY-MM-DD> <HH:MM> <消息>
 - 消息支持占位符：`{date}`、`{time}`、`{weekday}`、`{days_until_cn:日期}`、`{image:...}` 等
 - 仅超级用户可用，发送 `/autospk` 可查看完整帮助
 
+### ✅ 自动批准（好友申请 / 群邀请）
+
+自动同意加好友申请和群邀请，开启后无需手动处理。相关配置（`.env`，默认关闭）：
+
+```
+AUTO_APPROVE_FRIEND=true
+AUTO_APPROVE_GROUP_INVITE=true
+AUTO_APPROVE_NOTIFY_SUPERUSER=true
+```
+
+- 三个开关默认均为关闭，设为 `true` 后生效
+- 开启通知后，每次自动同意会私聊超级用户告知详情
+- 申请加群（`add`）不会自动处理
+
 ## 联系我
 
 - QQ：690379256
