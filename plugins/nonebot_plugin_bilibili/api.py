@@ -90,6 +90,18 @@ class BilibiliApi:
                 await asyncio.sleep(REQUEST_RETRY_DELAY * (2**attempt))
         if response is None:  # pragma: no cover - the loop either succeeds or raises
             raise BilibiliApiError("连接 B 站失败")
+        if response.status_code == 412 and use_cookie and cookies:
+            # 失效/异常的 Cookie 可能触发 B 站风控（412），去掉 Cookie 匿名重试一次
+            logger.debug(
+                "B 站接口返回 412，Cookie 可能已失效，尝试去除 Cookie 匿名重试"
+            )
+            cookies = None
+            try:
+                response = await client.get(url, params=params)
+            except httpx.TransportError as exc:
+                raise BilibiliApiError(
+                    "B 站风控拒绝了请求（412），去除 Cookie 重试仍失败，请稍后重试或重新使用 /bili login 登录"
+                ) from exc
         if response.status_code == 412:
             raise BilibiliApiError("B 站风控拒绝了请求，请先使用 /bili login 扫码登录并稍后重试")
         response.raise_for_status()
@@ -120,8 +132,11 @@ class BilibiliApi:
         return payload, response
 
     async def get_profile(self, uid: int) -> tuple[str, str]:
+        # 主播资料接口匿名即可访问，不携带 Cookie，避免失效 Cookie 触发风控
         payload = await self._get_json(
-            f"{self.API}/x/web-interface/card", {"mid": uid, "photo": "true"}
+            f"{self.API}/x/web-interface/card",
+            {"mid": uid, "photo": "true"},
+            use_cookie=False,
         )
         card = payload.get("data", {}).get("card", {})
         return str(card.get("name") or uid), str(card.get("face") or "")
