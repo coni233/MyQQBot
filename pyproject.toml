@@ -32,6 +32,7 @@ dependencies = [
     "playwright>=1.40",
     "python-multipart>=0.0.9",
     "regex>=2024.5.15",
+    "msgpack>=1.0",
 ]
 
 
