@@ -15,7 +15,7 @@ dependencies = [
     "nonebot-plugin-status>=0.9.0",
     "nonebot-plugin-apscheduler>=0.5.0",
     "nonebot-plugin-localstore>=0.7.4",
-    "nonebot-plugin-alconna<1.0.0,>=0.46.3",
+    "nonebot-plugin-alconna<1.0.0,>=0.56.2",
 
     # htmlrender
     # 0.5.1 is required by ddcheck's html_to_pic API and has been
@@ -27,12 +27,24 @@ dependencies = [
     "httpx>=0.28.0,<1.0.0",
     "Jinja2>=3.0,<4.0",
     "qrcode>=7.4",
-    "pillow>=9.1.0",
+    "pillow>=11.1.0",
     "pydantic>=2.0",
     "playwright>=1.40",
     "python-multipart>=0.0.9",
     "regex>=2024.5.15",
     "msgpack>=1.0",
+
+    # jmdownloader plugin dependencies
+    "aiorwlock>=1.5.1,<2.0.0",
+    "nonebot-plugin-uninfo>=0.7.0,<1.0.0",
+    "nonebot-plugin-waiter>=0.8.1,<1.0.0",
+    "jmcomic>=2.6.13",
+    "img2pdf>=0.6.0",
+    "pikepdf>=10.3.0",
+    "msgspec>=0.19.0",
+    "boltons>=24.0.0",
+    "cachetools>=5.5.0",
+    "pyzipper>=0.3.6",
 ]
 
 

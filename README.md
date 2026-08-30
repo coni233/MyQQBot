@@ -174,6 +174,31 @@ autospk addonce <group|private> <目标> <YYYY-MM-DD> <HH:MM> <消息>
 - 消息支持占位符：`{date}`、`{time}`、`{weekday}`、`{days_until_cn:日期}`、`{image:...}` 等
 - 仅超级用户可用，发送 `/autospk` 可查看完整帮助
 
+### 📥 /jm —— JMComic 搜索与下载
+
+基于 JMComic 的漫画搜索/下载插件（仅支持 OneBot V11）：
+
+```
+/jm下载 <jm号>
+/jm下载集 <jm号> [章节]
+/jm查询 <jm号>
+/jm搜索 <关键词>
+/jm下一页
+```
+
+- 下载 / 查询 / 搜索：群员可用，群聊/私聊均可
+- 管理命令：`/jm设置文件夹 <文件夹名>`、`/jm拉黑 @用户`、`/jm启用群 <群号>`、`/jm禁用群 <群号>`、`/jm禁用id <jm号>`、`/jm禁用tag <tag>`、`/开启jm`、`/关闭jm`
+- 数据和下载缓存由 localstore 管理，每天凌晨 3 点自动清理
+- 命令需带 `/` 前缀，例如：
+
+```
+/jm搜索 蓝色监狱
+/jm查询 123456
+/jm下载 123456
+```
+
+相关配置见 `.env`（`JMCOMIC_*`，全部可选），插件来自 [nonebot-plugin-jmdownloader](https://github.com/Misty02600/nonebot-plugin-jmdownloader)。
+
 ### ✅ 自动批准（好友申请 / 群邀请）
 
 自动同意加好友申请和群邀请，开启后无需手动处理。相关配置（`.env`，默认关闭）：
@@ -262,7 +287,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 为了让插件能按个人需求随意修改、减少对环境的依赖，大部分插件直接以源码形式放在 `plugins/` 目录下，由 `plugin_dirs` 加载：
 
 - 自己开发的插件：退休倒计时、游戏日程查询、help 等
-- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）等；查成分为自研插件（数据源 Danmakus）
+- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）、JMComic 下载（jmdownloader）等；查成分为自研插件（数据源 Danmakus）
 
 其中退休倒计时插件已发布到 PyPI（`nonebot-plugin-retirement-countdown`），商店审核通过后可通过 `nb plugin install` 一键安装。
 
@@ -286,6 +311,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 - [nonebot-plugin-bilibili](https://github.com/coni233/nonebot-plugin-bilibili) —— B 站直播/动态订阅（fork 自上游开源项目，本地维护并已向上游提交 PR）
 - [nonebot-plugin-ddcheck](https://github.com/noneplugin/nonebot-plugin-ddcheck) —— B 站 VTuber 成分查询
 - [nonebot-plugin-autospeak](https://github.com/TangTangChu/nonebot-plugin-autospeak) —— 定时自动发言
+- [nonebot-plugin-jmdownloader](https://github.com/Misty02600/nonebot-plugin-jmdownloader) —— JMComic 搜索与下载
 - [nonebot-plugin-roll](https://github.com/MinatoAquaCrews/nonebot_plugin_roll) —— 掷骰子（原作者 KafCoppelia）
 
 ## License
