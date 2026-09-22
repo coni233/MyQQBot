@@ -89,7 +89,7 @@
 /营收 202607 psp 10
 ```
 
-数据来源：[dc.hihivr.top](https://dc.hihivr.top/)（第三方非官方接口，数据仅供参考）。
+数据来源：[dc.hihivr.top](https://dc.hihivr.top/)（第三方非官方接口，数据仅供参考）。该接口不可用时会自动切换到备用接口：[VR_douchong](https://github.com/QianQiuZy/VR_douchong) 提供的 `vr.qianqiuzy.cn`（VirtuaReal）/ `psp.qianqiuzy.cn`（PSPlive），结果图片上会标注本次实际使用的数据源。
 
 ### 🎮 /游戏 —— 游戏日程
 

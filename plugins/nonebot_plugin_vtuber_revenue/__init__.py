@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import re
+import time
 from datetime import datetime
 
 import httpx
@@ -30,7 +31,17 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11"},
 )
 
-API = "https://dc.hihivr.top/gift/by_month"
+PRIMARY_API = "https://dc.hihivr.top/gift/by_month"
+# 备用接口：主用接口不可用时使用，vr / psp 各一套数据
+FALLBACK_APIS = {
+    "vr": "https://vr.qianqiuzy.cn/gift/by_month",
+    "psp": "https://psp.qianqiuzy.cn/gift/by_month",
+}
+SOURCE_LABELS = {
+    "dc": "dc.hihivr.top",
+    "qianqiuzy": "qianqiuzy.cn（备用接口）",
+}
+FAILOVER_COOLDOWN = 600  # 主用接口失败后，多少秒内直接走备用接口
 TIMEOUT = 15.0
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -82,15 +93,75 @@ def _sum_duration(durations: list[str]) -> str:
     return f"{hours}:{minutes:02d}:{seconds:02d}"
 
 
-async def _fetch_anchors(month: str, filter_: str) -> list[dict]:
-    async with httpx.AsyncClient(
-        timeout=TIMEOUT,
-        headers={"User-Agent": UA, "Referer": "https://dc.hihivr.top/"},
-    ) as client:
-        resp = await client.get(API, params={"month": month, "filter": filter_})
+async def _fetch_from_dc(
+    client: httpx.AsyncClient, month: str, filter_: str
+) -> list[dict]:
+    resp = await client.get(
+        PRIMARY_API,
+        params={"month": month, "filter": filter_},
+        headers={"Referer": "https://dc.hihivr.top/"},
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    anchors = data.get("anchors") if isinstance(data, dict) else data
+    return [a for a in (anchors or []) if isinstance(a, dict)]
+
+
+def _normalize_fallback(anchor: dict, union: str) -> dict:
+    """把备用接口的房间数据补齐成与主用接口一致的字段结构。"""
+    row = dict(anchor)
+    gift = float(row.get("gift") or 0)
+    guard = float(row.get("guard") or 0)
+    super_chat = float(row.get("super_chat") or 0)
+    row["union"] = row.get("union") or union
+    # 备用接口不返回 total_revenue，这里用 礼物 + 大航海 + SC 补上
+    row["total_revenue"] = float(row.get("total_revenue") or gift + guard + super_chat)
+    return row
+
+
+async def _fetch_from_fallback(
+    client: httpx.AsyncClient, month: str, filter_: str
+) -> list[dict]:
+    unions = ("vr", "psp") if filter_ == "all" else (filter_,)
+    anchors: list[dict] = []
+    for key in unions:
+        resp = await client.get(FALLBACK_APIS[key], params={"month": month})
         resp.raise_for_status()
         data = resp.json()
-    return data.get("anchors") or []
+        union = "VirtuaReal" if key == "vr" else "PSPlive"
+        anchors.extend(
+            _normalize_fallback(a, union) for a in (data or []) if isinstance(a, dict)
+        )
+    anchors.sort(key=lambda a: float(a.get("total_revenue") or 0), reverse=True)
+    return anchors
+
+
+_prefer_fallback_until = 0.0
+
+
+async def _fetch_anchors(month: str, filter_: str) -> tuple[list[dict], str]:
+    """取指定月份的营收榜，主用接口失败时自动改用备用接口。
+
+    返回 (榜单数据, 数据源标识)。主用接口失败后短时间内直接用备用接口，
+    避免一次年度查询里每个月份都去重试已经挂掉的主用接口。
+    """
+    global _prefer_fallback_until
+    now = time.monotonic()
+    if now >= _prefer_fallback_until:
+        try:
+            async with httpx.AsyncClient(
+                timeout=TIMEOUT, headers={"User-Agent": UA}
+            ) as client:
+                anchors = await _fetch_from_dc(client, month, filter_)
+            if not anchors:
+                raise RuntimeError("主用接口没有返回数据")
+            return anchors, "dc"
+        except Exception as exc:
+            logger.warning("主用营收接口 dc.hihivr.top 不可用，改用备用接口：{}", exc)
+            _prefer_fallback_until = now + FAILOVER_COOLDOWN
+    async with httpx.AsyncClient(timeout=TIMEOUT, headers={"User-Agent": UA}) as client:
+        anchors = await _fetch_from_fallback(client, month, filter_)
+    return anchors, "qianqiuzy"
 
 
 def _merge_annual(monthly: list[tuple[str, list[dict]]]) -> list[dict]:
@@ -171,6 +242,7 @@ def _build_html(
     label: str,
     filter_: str,
     rows: list[tuple[str, str, str, str, str, str, str]],
+    source: str,
 ) -> str:
     body_rows = "".join(
         "<tr>"
@@ -218,7 +290,7 @@ def _build_html(
 </head>
 <body>
   <h1>{label} {filter_.upper()} 营收榜（共 {len(rows)} 人）</h1>
-  <div class="sub">数据来源 dc.hihivr.top（第三方非官方接口，仅供参考）</div>
+  <div class="sub">数据来源 {source}（第三方非官方接口，仅供参考）</div>
   <table>
     <thead>
       <tr><th>#</th><th>主播</th><th>总营收</th><th>礼物</th><th>大航海</th><th>SC</th><th>时长</th></tr>
@@ -230,14 +302,14 @@ def _build_html(
 
 
 async def _send_images(
-    matcher: Matcher, label: str, filter_: str, anchors: list[dict]
+    matcher: Matcher, label: str, filter_: str, anchors: list[dict], source: str
 ) -> bool:
     if not HAS_RENDER:
         return False
     sent_any = False
     try:
         pic = await html_to_pic(
-            html=_build_html(label, filter_, _rows(anchors)),
+            html=_build_html(label, filter_, _rows(anchors), source),
             viewport={"width": 720, "height": 10},
             device_scale_factor=2,
         )
@@ -294,13 +366,15 @@ async def _handle_revenue(
             else:
                 end_month = 0
             monthly: list[tuple[str, list[dict]]] = []
+            sources: set[str] = set()
             for m in range(1, end_month + 1):
                 month_str = f"{year}{m:02d}"
                 try:
-                    month_anchors = await _fetch_anchors(month_str, filter_)
+                    month_anchors, source = await _fetch_anchors(month_str, filter_)
                 except Exception as exc:
                     logger.warning("获取 {} 营收数据失败：{}", month_str, exc)
                     continue
+                sources.add(source)
                 if month_anchors:
                     monthly.append((month_str, month_anchors))
             anchors = _merge_annual(monthly)
@@ -311,7 +385,8 @@ async def _handle_revenue(
             else:
                 label = f"{year}"
         else:
-            anchors = await _fetch_anchors(month, filter_)
+            anchors, source = await _fetch_anchors(month, filter_)
+            sources = {source}
             label = month
     except Exception as exc:
         logger.warning("营收数据获取失败：{}", exc)
@@ -323,7 +398,11 @@ async def _handle_revenue(
     if limit:
         anchors = anchors[:limit]
 
-    if await _send_images(matcher, label, filter_, anchors):
+    source_note = " + ".join(
+        src for key, src in SOURCE_LABELS.items() if key in sources
+    ) or SOURCE_LABELS["dc"]
+
+    if await _send_images(matcher, label, filter_, anchors, source_note):
         return
 
     # 图片渲染不可用时回退为文本
