@@ -8,3 +8,6 @@ class Config(BaseModel):
 
     # 游戏日程表 API 地址
     game_schedule_api_base: str = "https://www.coni.top/game-schedule/api.php"
+
+    # 游戏预约入口地址
+    game_schedule_reserve_url: str = "https://www.coni.top/game-schedule/"

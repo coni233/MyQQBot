@@ -46,6 +46,13 @@ _WEEK_LABEL = {
     -1: "上周",
 }
 
+_RESERVE_ALIASES = {
+    "预约",
+    "游戏预约",
+    "预约链接",
+    "gamereserve",
+}
+
 
 class ScheduleError(Exception):
     """日程查询失败。"""
@@ -84,6 +91,8 @@ def resolve_target(text: str) -> tuple[str, Any] | None:
     """把命令参数解析为查询目标：(类型, 参数)。"""
     text = text.strip()
     lowered = text.lower()
+    if lowered in _RESERVE_ALIASES:
+        return ("reserve", None)
     if lowered == "today" or text in ("今天", "今日"):
         return ("today", None)
     if text in _WEEK_OFFSET:
@@ -155,6 +164,11 @@ def _monday_of(day: date) -> date:
     return day - timedelta(days=day.weekday())
 
 
+def build_reserve_reply() -> str:
+    """游戏预约入口链接。"""
+    return f"🎮 游戏预约：{config.game_schedule_reserve_url}"
+
+
 async def _reply_day(day: date) -> str:
     data = await _fetch({"action": "day", "date": day.isoformat()})
     _check_success(data)
@@ -170,6 +184,8 @@ async def _reply_week(offset: int) -> str:
 
 async def build_reply(kind: str, payload: Any = None) -> str:
     """根据查询目标获取并格式化日程文本。"""
+    if kind == "reserve":
+        return build_reserve_reply()
     try:
         if kind == "today":
             data = await _fetch({"action": "today"})
