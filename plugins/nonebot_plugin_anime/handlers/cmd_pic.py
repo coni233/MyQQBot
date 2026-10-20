@@ -78,11 +78,11 @@ async def handle_anime_view_poster(bot: Bot, event: Event, arg: Message = Comman
     args = arg.extract_plain_text().strip()
 
     if not args:
-        await anime_view_poster.finish("使用方法：\n番剧查看图 <年月>\n例如：番剧查看图 2026年4月")
+        await anime_view_poster.finish("使用方法：\n番剧查看图 <年月>\n例如：番剧查看图 2026年4月 / 202604")
 
     result = parse_single_date(args)
     if not result[0]:
-        await anime_view_poster.finish("季度格式错误，请使用如：2026年4月")
+        await anime_view_poster.finish("季度格式错误，请使用如：2026年4月 或 202604")
     year, month = result
 
     if not validate_year(year):
@@ -143,11 +143,11 @@ async def handle_anime_week_poster(bot: Bot, event: Event, arg: Message = Comman
     args = arg.extract_plain_text().strip()
 
     if not args:
-        await anime_week_poster.finish("使用方法：\n星期查看图 <年月> [星期X]\n例如：星期查看图 2026年4月\n　　　星期查看图 2026年4月 星期一")
+        await anime_week_poster.finish("使用方法：\n星期查看图 <年月> [星期X]\n例如：星期查看图 2026年4月 / 202604\n　　　星期查看图 202604 星期一")
 
     parts = args.split()
     if len(parts) > 2:
-        await anime_week_poster.finish("参数格式错误，请使用：2026年4月 或 2026年4月 星期一")
+        await anime_week_poster.finish("参数格式错误，请使用：2026年4月、202604，或 202604 星期一")
 
     target_weekday = None
     if len(parts) == 2:
@@ -157,7 +157,7 @@ async def handle_anime_week_poster(bot: Bot, event: Event, arg: Message = Comman
 
     result = parse_single_date(parts[0])
     if not result[0]:
-        await anime_week_poster.finish("季度格式错误，请使用如：2026年4月")
+        await anime_week_poster.finish("季度格式错误，请使用如：2026年4月 或 202604")
     year, month = result
 
     if not validate_year(year):

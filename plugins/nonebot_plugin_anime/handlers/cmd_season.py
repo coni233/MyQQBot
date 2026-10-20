@@ -119,12 +119,12 @@ async def handle_anime_view(bot: Bot, event: Event, arg: Message = CommandArg())
     args = arg.extract_plain_text().strip()
 
     if not args:
-        await anime_view.finish("请指定季度，格式如：2025年4月")
+        await anime_view.finish("请指定季度，格式如：2026年4月 或 202604")
 
     # 解析参数
     result = parse_single_date(args)
     if not result[0]:
-        await anime_view.finish("季度格式错误，请使用如：2025年4月")
+        await anime_view.finish("季度格式错误，请使用如：2026年4月 或 202604")
     year, month = result
 
     # 验证年份范围
@@ -199,7 +199,7 @@ async def handle_anime_view_week(bot: Bot, event: Event, arg: Message = CommandA
     target_weekday = None
 
     if not args:
-        await anime_view_week.finish("请指定季度，格式如：2025年4月 或 2025年4月 星期一")
+        await anime_view_week.finish("请指定季度，格式如：2026年4月、202604，或 202604 星期一")
 
     # 解析参数
     parts = args.split()
@@ -210,12 +210,12 @@ async def handle_anime_view_week(bot: Bot, event: Event, arg: Message = CommandA
         season_arg = parts[0]
         target_weekday = parts[1]
     else:
-        await anime_view_week.finish("参数格式错误，请使用：2025年4月 或 2025年4月 星期一")
+        await anime_view_week.finish("参数格式错误，请使用：2026年4月、202604，或 202604 星期一")
 
     # 解析季度参数
     result = parse_single_date(season_arg)
     if not result[0]:
-        await anime_view_week.finish("季度格式错误，请使用如：2025年4月")
+        await anime_view_week.finish("季度格式错误，请使用如：2026年4月 或 202604")
     year, month = result
 
     # 验证年份范围

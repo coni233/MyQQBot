@@ -126,37 +126,43 @@ def parse_date_range_optimized(date_range_str: str) -> Tuple[Optional[Tuple[int,
 
 
 def parse_single_date(date_str: str) -> Tuple[Optional[int], Optional[int]]:
-    """解析单个日期字符串，返回(年,月)"""
-    date_str = date_str.strip()
+    """解析单个年月字符串，返回 (年, 月)，月份对齐到季度起始月
 
-    # 统一分隔符为 .
-    date_str = re.sub(r'[年月日]', '.', date_str)
-    date_str = re.sub(r'[-/]', '.', date_str)
-    date_str = date_str.strip('.')
+    支持 2026年7月、2026-07、2026/7、2026.07、2026 07、202607 等写法。
+    """
+    date_str = str(date_str).strip()
+    if not date_str:
+        return None, None
 
-    parts = [p for p in date_str.split('.') if p]
+    # 紧凑写法：202607
+    compact = re.fullmatch(r'(\d{4})(\d{2})', date_str)
+    if compact:
+        year_text, month_text = compact.groups()
+    else:
+        # 统一分隔符为 .；"2026 07" 也按 2026.07 处理
+        date_str = re.sub(r'(?<=\d)\s+(?=\d)', '.', date_str)
+        date_str = re.sub(r'[年月日]', '.', date_str)
+        date_str = re.sub(r'[-/]', '.', date_str)
+        date_str = date_str.strip('.')
+
+        parts = [p for p in date_str.split('.') if p]
+        if not parts:
+            return None, None
+        year_text = parts[0]
+        month_text = parts[1] if len(parts) >= 2 else "1"
 
     try:
-        year = int(parts[0])
-        month = 1
-
-        if len(parts) >= 2:
-            month = int(parts[1])
-            if 1 <= month <= 3:
-                month = 1
-            elif 4 <= month <= 6:
-                month = 4
-            elif 7 <= month <= 9:
-                month = 7
-            elif 10 <= month <= 12:
-                month = 10
-            else:
-                month = 1
-
-        return year, month
-
-    except (ValueError, IndexError):
+        year = int(year_text)
+        month = int(month_text)
+    except ValueError:
         return None, None
+
+    if not 1 <= month <= 12:
+        return None, None
+
+    # 对齐到季度起始月：1-3 -> 1，4-6 -> 4，7-9 -> 7，10-12 -> 10
+    month = ((month - 1) // 3) * 3 + 1
+    return year, month
 
 
 def get_seasons_in_range(start_year: int, start_month: int, end_year: int, end_month: int) -> List[Tuple[int, int]]:
