@@ -1,0 +1,10 @@
+from .cmd_search import handle_anime_bgmlist, handle_anime_bgmsearch, handle_anime_cvsearch, handle_anime_charsearch
+from .cmd_tag import handle_bgmtag_add, handle_bgmtag_del, handle_bgmtag_view
+from .cmd_updata import handle_anime_bgmget, handle_anime_bgmmonth, handle_anime_getmonth
+from .cmd_score import handle_anime_score, handle_anime_score_show, handle_anime_score_delete, handle_score_pic, handle_anime_score_search
+from .cmd_char import handle_anime_character_rate, handle_anime_character_delete, handle_anime_character_view, handle_character_pic
+from .cmd_season import handle_anime_view, handle_anime_view_today, handle_anime_view_week
+from .cmd_pic import handle_anime_view_poster, handle_anime_week_poster
+from .cmd_admin import handle_anime_add_group, handle_anime_list_groups, handle_anime_remove_group, handle_anime_clear_cache, handle_anime_debug
+from .cmd_random import handle_anime_random
+from .cmd_session import handle_anime_session

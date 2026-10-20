@@ -115,6 +115,29 @@
 
 预约入口默认指向游戏日程表站点，可通过 `GAME_SCHEDULE_RESERVE_URL` 覆盖。
 
+### 🍿 /番剧 —— Bangumi 番剧查询
+
+基于 [Bangumi](https://bgm.tv/dev) 的番剧查询，支持多条件组合搜索、季度查看、随机推荐、本地评分与标签管理，结果多为图片卡片：
+
+```
+/番剧搜索 奇蛋物语                  关键词搜索
+/番剧搜索 原创 标签 百合+日常       多条件组合
+/番剧获取 253                      通过 Bangumi ID 获取/更新番剧
+/随机番剧 分数 ≥8                  随机推荐
+/番剧查看 2026年1月                查看季度番剧
+/番剧评分 奇蛋物语 我 9.5          给番剧打本地评分
+/评分图 我                         生成评分图
+/角色评级 <角色名> 我 5             角色评级
+/番剧群组添加 156067047             （超管）允许该群使用
+/清理番剧缓存                       （超管）清理图片缓存
+```
+
+搜索条件关键字：`标签`（多个用 `+` 连接）、`分数`（`6-8.5` / `≥8` / `≤6`）、`cv`、`导演`、`制作`、`staff`、`季度`、`类型`。完整指令见 `/anime help`。
+
+群聊默认不可用，需要超管先用 `/番剧群组添加 <群号>` 加白名单；私聊默认可用。
+
+资源目录默认 `data/nonebot_plugin_anime/resource`，可放 `bgm.json`（番剧库）和 `fonts/`（渲染字体），或用 `ANIME__RESOURCE_DIR` 指定。仓库里不放番剧库，需要时下载上游 `bangumi_resource` 资源包解压进去，否则番剧搜索为空、只能靠 `/番剧获取 <ID>` 逐条添加。Bangumi API 国内直连不稳定，可用 `ANIME__HTTP_PROXY` 配置代理（本机配置为 `http://127.0.0.1:7897`），也可用 `ANIME__BGM_API_TOKEN` 提高请求频率上限。
+
 ### 📺 /bili —— B 站直播与动态订阅
 
 订阅指定 UP 主后，开播时推送图片卡片，下播推送文字通知，新动态也会定时检测推送：
@@ -297,7 +320,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 为了让插件能按个人需求随意修改、减少对环境的依赖，大部分插件直接以源码形式放在 `plugins/` 目录下，由 `plugin_dirs` 加载：
 
 - 自己开发的插件：退休倒计时、游戏日程查询、help 等
-- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）、JMComic 下载（jmdownloader）等；查成分为自研插件（数据源 Danmakus）
+- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）、JMComic 下载（jmdownloader）、Bangumi 番剧查询（anime）等；查成分为自研插件（数据源 Danmakus）
 
 其中退休倒计时插件已发布到 PyPI（`nonebot-plugin-retirement-countdown`），商店审核通过后可通过 `nb plugin install` 一键安装。
 
@@ -322,6 +345,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 - [nonebot-plugin-ddcheck](https://github.com/noneplugin/nonebot-plugin-ddcheck) —— B 站 VTuber 成分查询
 - [nonebot-plugin-autospeak](https://github.com/TangTangChu/nonebot-plugin-autospeak) —— 定时自动发言
 - [nonebot-plugin-jmdownloader](https://github.com/Misty02600/nonebot-plugin-jmdownloader) —— JMComic 搜索与下载
+- [nonebot-plugin-anime](https://github.com/ShioMI39/nonebot-plugin-anime) —— Bangumi 番剧查询
 - [nonebot-plugin-roll](https://github.com/MinatoAquaCrews/nonebot_plugin_roll) —— 掷骰子（原作者 KafCoppelia）
 
 ## License
