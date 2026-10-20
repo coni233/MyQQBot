@@ -223,30 +223,6 @@ async def _send_image(matcher: Matcher, html_text: str) -> bool:
     return True
 
 
-async def _send_images(matcher: Matcher, pages: list[str]) -> bool:
-    """渲染并发送多页图片，任一页渲染失败则整体回退文本。"""
-    if not HAS_RENDER:
-        return False
-    pics: list[bytes] = []
-    try:
-        for page in pages:
-            pics.append(
-                await html_to_pic(
-                    html=page,
-                    viewport={"width": 740, "height": 10},
-                    device_scale_factor=2,
-                )
-            )
-    except FinishedException:
-        raise
-    except Exception as exc:
-        logger.warning("查成分图片渲染失败：{}", exc)
-        return False
-    for pic in pics:
-        await matcher.send(MessageSegment.image(pic))
-    return True
-
-
 def _watched_rows(
     channels: list[dict], counts: dict[int, int], limit: int | None = None
 ) -> list[list[str]]:
@@ -506,11 +482,17 @@ tr:nth-child(even) td { background: #1b1c24; }
             background: linear-gradient(90deg, #4d8dff, #7ec8ff); }
 .bar-value { width: 96px; text-align: right; color: #9a9aa5;
              font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { background: #23242e; border: 1px solid #2b2c36; border-radius: 10px;
+       padding: 3px 10px; font-size: 12px; color: #c9c9d4; }
 .heat { display: grid; grid-template-columns: 34px repeat(24, 1fr);
         gap: 2px; align-items: center; }
 .heat-day { font-size: 10px; color: #8f8f9c; }
 .heat-cell { height: 15px; border-radius: 2px; background: #23242e; }
 .heat-axis { font-size: 9px; color: #6f6f7c; text-align: center; }
+.divider { margin: 20px 0 2px; border-top: 1px dashed #2f303a; text-align: center; }
+.divider span { position: relative; top: -9px; background: #16171d;
+                padding: 0 10px; font-size: 11px; color: #7c7c88; }
 .foot { margin-top: 12px; font-size: 10px; color: #6f6f7c; }
 """
 
@@ -591,8 +573,8 @@ def _heatmap(rhythm: list[list[int]], peak: int) -> str:
     return f'<div class="heat">{"".join(cells)}</div>'
 
 
-def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
-    """生成 deep 分析的两页图片：概览画像 + 排行明细。"""
+def _deep_html(uid: int, result: dict, range_label: str) -> str:
+    """生成 deep 分析的长图：概览画像 + 排行明细。"""
     st = _collect_stats(result)
     insight = st["insights"]
     names = [str(name) for name in result.get("nameHistory") or [] if str(name)]
@@ -713,12 +695,13 @@ def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
         key=lambda item: -item[1],
     )[:24]
     if word_items:
-        word_max = word_items[0][1] or 1
-        word_bars = [(word, f"×{_fmt_count(count)}", count / word_max) for word, count in word_items]
-        half = (len(word_bars) + 1) // 2
         words_html = (
-            f'<div class="grid m2"><div>{_bars(word_bars[:half])}</div>'
-            f"<div>{_bars(word_bars[half:])}</div></div>"
+            '<div class="tags">'
+            + "".join(
+                f'<span class="tag">{html.escape(word)} × {_fmt_count(count)}</span>'
+                for word, count in word_items
+            )
+            + "</div>"
         )
     else:
         words_html = '<div class="card"><div class="note">暂无词频数据</div></div>'
@@ -734,16 +717,13 @@ def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
     area_max = max((item[2] for item in area_items), default=1) or 1
     area_bars = [(name, value, count / area_max) for name, value, count in area_items]
 
-    page1 = _shell(
-        title,
-        sub,
+    overview = (
         _cards(metrics)
         + _section("互动画像", "来自接口 insights", _cards(profile))
         + (_section("行为摘要", "", _cards(highlights, 2)) if highlights else "")
         + _section("留痕构成", f"共 {_fmt_count(sum(st['events'].values()))} 条", _bars(mix))
         + _section("高频词 Top 24", "分词统计", words_html)
         + _section("分区偏好 Top 10", "按有互动的场次统计", _bars(area_bars))
-        + '<div class="foot">数据来源 danmakus.com（ukamnads.icu）· 由机器人自动生成</div>',
     )
 
     channels = _top_channels(result)
@@ -805,9 +785,7 @@ def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
         if st["favorite_weekday"] >= 0
         else "按互动次数"
     )
-    page2 = _shell(
-        title,
-        f"{range_label} · 主播排行与打米明细",
+    detail = (
         (
             _section(
                 "主播排行 Top 25",
@@ -819,7 +797,11 @@ def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
                 ),
             )
             if channel_rows
-            else _section("主播排行", "", '<div class="card"><div class="note">暂无频道数据</div></div>')
+            else _section(
+                "主播排行",
+                "",
+                '<div class="card"><div class="note">暂无频道数据</div></div>',
+            )
         )
         + (
             _section(
@@ -859,9 +841,15 @@ def _deep_pages(uid: int, result: dict, range_label: str) -> list[str]:
             if name_rows
             else ""
         )
+    )
+    return _shell(
+        title,
+        sub,
+        overview
+        + '<div class="divider"><span>主播排行与打米明细</span></div>'
+        + detail
         + '<div class="foot">数据来源 danmakus.com（ukamnads.icu）· 由机器人自动生成</div>',
     )
-    return [page1, page2]
 
 
 def _deep_text(uid: int, result: dict, range_label: str) -> str:
@@ -948,7 +936,7 @@ async def _handle(matcher: Matcher, event: MessageEvent, arg: Message = CommandA
             job_id = await _create_job(uid, start_ts, end_ts)
             await _wait_job(job_id)
             result = await _fetch_result(job_id)
-            if await _send_images(matcher, _deep_pages(uid, result, range_label)):
+            if await _send_image(matcher, _deep_html(uid, result, range_label)):
                 return
             await matcher.finish(_deep_text(uid, result, range_label))
         else:
