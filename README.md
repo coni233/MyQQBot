@@ -138,6 +138,28 @@
 
 资源目录默认 `data/nonebot_plugin_anime/resource`，可放 `bgm.json`（番剧库）和 `fonts/`（渲染字体），或用 `ANIME__RESOURCE_DIR` 指定。仓库里不放番剧库，需要时下载上游 `bangumi_resource` 资源包解压进去，否则番剧搜索为空、只能靠 `/番剧获取 <ID>` 逐条添加。Bangumi API 国内直连不稳定，可用 `ANIME__HTTP_PROXY` 配置代理（本机配置为 `http://127.0.0.1:7897`），也可用 `ANIME__BGM_API_TOKEN` 提高请求频率上限。
 
+### 🤖 /状态 —— AI 群友（nonebot-plugin-aigf-master）
+
+群聊 LLM 助手，在指定群里自动参与聊天，支持四层记忆、表情包、联网搜索、跨插件感知/调用和命令学习：
+
+```env
+AIGFM_ENABLED_GROUPS=[123456789]
+AIGFM_LLM_API_KEY=sk-xxx
+AIGFM_LLM_BASE_URL=https://api.deepseek.com
+AIGFM_LLM_MODEL=deepseek-chat
+```
+
+```
+/状态                           （超管）查看角色、社交能量和最近消息
+/set_role 小助手 一个友好的群友   （超管）设置角色
+/reset                          （超管）清空当前会话上下文
+/presets                        （超管）查看可用预设
+/set_preset <预设名>             （超管）切换预设
+/重载表情包                      （超管）重新加载表情包索引
+```
+
+默认不启用任何群；未配置 `AIGFM_LLM_API_KEY` / `AIGFM_LLM_BASE_URL` 时插件仍会加载，但不会响应。图片理解、AI 生图、联网搜索、跨 bot 通信等可选能力见 `plugins/nonebot_plugin_aigf_master/README.md`。每次回复都会调用 LLM，注意 token 消耗；数据保存在 `data/nonebot_plugin_aigf_master`。
+
 ### 📺 /bili —— B 站直播与动态订阅
 
 订阅指定 UP 主后，开播时推送图片卡片，下播推送文字通知，新动态也会定时检测推送：
@@ -320,7 +342,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 为了让插件能按个人需求随意修改、减少对环境的依赖，大部分插件直接以源码形式放在 `plugins/` 目录下，由 `plugin_dirs` 加载：
 
 - 自己开发的插件：退休倒计时、游戏日程查询、help 等
-- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）、JMComic 下载（jmdownloader）、Bangumi 番剧查询（anime）等；查成分为自研插件（数据源 Danmakus）
+- 从 GitHub 下载并本地维护的第三方插件：B 站订阅（bilibili）、定时自动发言（autospeak）、JMComic 下载（jmdownloader）、Bangumi 番剧查询（anime）、AI 群友（aigf）等；查成分为自研插件（数据源 Danmakus）
 
 其中退休倒计时插件已发布到 PyPI（`nonebot-plugin-retirement-countdown`），商店审核通过后可通过 `nb plugin install` 一键安装。
 
@@ -346,6 +368,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 - [nonebot-plugin-autospeak](https://github.com/TangTangChu/nonebot-plugin-autospeak) —— 定时自动发言
 - [nonebot-plugin-jmdownloader](https://github.com/Misty02600/nonebot-plugin-jmdownloader) —— JMComic 搜索与下载
 - [nonebot-plugin-anime](https://github.com/ShioMI39/nonebot-plugin-anime) —— Bangumi 番剧查询
+- [nonebot-plugin-aigf-master](https://github.com/Funny1Potato/nonebot-plugin-aigf-master) —— 群聊 LLM 助手
 - [nonebot-plugin-roll](https://github.com/MinatoAquaCrews/nonebot_plugin_roll) —— 掷骰子（原作者 KafCoppelia）
 
 ## License

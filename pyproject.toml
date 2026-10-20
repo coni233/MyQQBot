@@ -49,6 +49,11 @@ dependencies = [
     # anime plugin dependencies
     "aiohttp>=3.8",
     "opencc>=1.3.1",
+
+    # aigf plugin dependencies
+    "openai>=1.0.0",
+    "numpy>=1.20.0",
+    "anyio>=4.0.0",
 ]
 
 

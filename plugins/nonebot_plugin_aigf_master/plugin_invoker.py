@@ -1,0 +1,111 @@
+"""插件调用器：通过 synthetic event 调用本实例其它插件"""
+
+import asyncio
+from datetime import datetime
+from typing import Literal
+
+from nonebot import get_driver, logger
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
+from nonebot.message import handle_event
+
+from .message_builder import compose_messages
+
+# nonebot 的 Event 基类允许额外字段（ConfigDict(extra="allow")），用它标记合成事件，
+# 不碰任何插件会读取的协议字段
+SYNTHETIC_FLAG = "aigf_synthetic"
+
+InvokeResult = Literal["ok", "timeout", "error"]
+
+
+def _apply_command_prefix(command: str) -> str:
+    """按本 bot 配置的命令前缀（COMMAND_START）补充到命令前"""
+    try:
+        command_start = get_driver().config.command_start
+        if command_start:
+            prefix = next(iter(command_start), "")
+            if prefix and not command.startswith(prefix):
+                command = prefix + command
+    except Exception:
+        pass
+    return command
+
+
+class PluginInvoker:
+    """调用本实例的其它插件
+
+    插件的响应不在这里收集：它由 api_hooks 的 on_calling_api 钩子写入消息缓冲区，
+    下一批处理时 LLM 自然看到。本类只负责投递命令并报告投递结果，
+    因此不含跨群共享的可变状态。
+    """
+
+    def __init__(self):
+        # {id(event): event}，强引用避免 id 被复用
+        self._synthetic: dict[int, object] = {}
+
+    def is_synthetic(self, event) -> bool:
+        """判断事件是否由本调用器合成（供 auto_chat 精确跳过，不误伤真实用户消息）"""
+        return id(event) in self._synthetic or bool(getattr(event, SYNTHETIC_FLAG, False))
+
+    async def invoke(self, bot, group_id: int, command: str, timeout: float = 30.0,
+                     user_id: int = 0, parts: list[dict] | None = None,
+                     sender_name: str = "aigf_user") -> InvokeResult:
+        """投递命令并等待分发结束
+
+        Args:
+            user_id: 触发命令的用户 QQ 号，用于需要读取发送者信息的命令
+            parts: 命令参数段（与回复的 reply 字段同结构），如 [{"type":"at","target":12345}]；
+                   条目之间会以空格拼在命令之后
+            sender_name: 合成事件的发送者昵称，调用方传当前群预设名；空值回落 aigf_user
+
+        返回投递结果，不代表插件是否回复。超时只取消本次分发，
+        插件稍后的输出仍会经钩子进入消息缓冲区。
+        """
+        logger.debug(f"[Invoker] 创建 synthetic event: command={command}, group={group_id}, user={user_id}, parts={parts}")
+        event = None
+
+        try:
+            event = await self._create_synthetic_event(bot, group_id, command, user_id, parts, sender_name)
+            self._synthetic[id(event)] = event
+            await asyncio.wait_for(handle_event(bot, event), timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.warning(f"[Invoker] 调用超时: {command}")
+            return "timeout"
+        except Exception as e:
+            logger.error(f"[Invoker] 调用失败: {e}")
+            return "error"
+        finally:
+            if event is not None:
+                self._synthetic.pop(id(event), None)
+
+        return "ok"
+
+    @staticmethod
+    async def _create_synthetic_event(bot, group_id: int, command: str, user_id: int = 0,
+                                      parts: list[dict] | None = None,
+                                      sender_name: str = "aigf_user") -> GroupMessageEvent:
+        """创建模拟的群消息事件（消息拼装与回复发送共用 message_builder.compose_messages）"""
+        # LLM 传无前缀命令，这里按本 bot 配置的命令前缀补充
+        command = _apply_command_prefix(command)
+
+        # 命令 + 参数段（at 段等）合成一条消息，条目之间以空格分隔
+        composed = await compose_messages(
+            bot, group_id, [{"type": "text", "content": command}] + list(parts or []))
+        message = composed.messages[0] if composed.messages else Message()
+        now = datetime.now()
+        return GroupMessageEvent(
+            time=int(now.timestamp()),
+            self_id=int(bot.self_id) if bot else 0,
+            post_type="message",
+            sub_type="normal",
+            message_type="group",
+            user_id=user_id,
+            group_id=group_id,
+            message_id=0,
+            message=message,
+            raw_message=command,
+            font=0,
+            sender={"user_id": user_id,
+                    "nickname": (sender_name or "").strip() or "aigf_user",
+                    "role": "member"},
+            **{SYNTHETIC_FLAG: True},
+        )
