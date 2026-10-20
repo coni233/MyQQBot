@@ -282,12 +282,30 @@ async def _fetch_result(job_id: str) -> dict:
     ) as client:
         resp = await client.get(API + f"/api/v3/user-analysis-jobs/{job_id}/result")
         resp.raise_for_status()
-        return msgpack.unpackb(resp.content, raw=False)
+        # 结果里的 eventTypes 等字段以整数为键，默认的 strict_map_key 会直接拒收
+        return msgpack.unpackb(resp.content, raw=False, strict_map_key=False)
 
 
 def _deep_channel_rows(result: dict) -> list[list[str]]:
     """按频道统计该用户自己的弹幕数、消费与最近观看时间。"""
     per: list[tuple[str, int, float, int]] = []
+    affinities = result.get("channelAffinities")
+    if isinstance(affinities, list) and affinities:
+        for entry in affinities:
+            if not isinstance(entry, dict):
+                continue
+            per.append(
+                (
+                    str(entry.get("channelName") or entry.get("channelUid") or "?"),
+                    int(entry.get("messageCount") or 0),
+                    float(entry.get("payment") or 0),
+                    int(entry.get("lastActiveAt") or 0),
+                )
+            )
+        per.sort(key=lambda x: -x[1])
+        return _channel_rows(per)
+
+    # 兼容旧版 v3 结果：channels -> lives -> danmakus
     for entry in result.get("channels") or []:
         if not isinstance(entry, dict):
             continue
@@ -307,6 +325,11 @@ def _deep_channel_rows(result: dict) -> list[list[str]]:
                     last = t
         per.append((name, total_msgs, total_price, last))
     per.sort(key=lambda x: -x[1])
+    return _channel_rows(per)
+
+
+def _channel_rows(per: list[tuple[str, int, float, int]]) -> list[list[str]]:
+    """把 (主播, 弹幕数, 消费, 最近观看) 元组格式化为表格行。"""
     rows = []
     for idx, (name, msgs, price, last) in enumerate(per[:MAX_ROWS], 1):
         rows.append([str(idx), name, _fmt_count(msgs), _fmt_money(price), _fmt_date(last)])
