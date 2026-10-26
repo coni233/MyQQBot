@@ -158,7 +158,7 @@ AIGFM_LLM_MODEL=deepseek-chat
 /重载表情包                      （超管）重新加载表情包索引
 ```
 
-默认不启用任何群；未配置 `AIGFM_LLM_API_KEY` / `AIGFM_LLM_BASE_URL` 时插件仍会加载，但不会响应。图片理解、AI 生图、联网搜索、跨 bot 通信等可选能力见 `plugins/nonebot_plugin_aigf_master/README.md`。每次回复都会调用 LLM，注意 token 消耗；数据保存在 `data/nonebot_plugin_aigf_master`。
+默认不启用任何群；`AIGFM_LLM_API_KEY` 和 `AIGFM_LLM_BASE_URL` 是必填配置，缺少时插件无法通过配置校验。图片理解、AI 生图、联网搜索、跨 bot 通信等可选能力见上游插件文档。每次回复都会调用 LLM，注意 token 消耗；数据保存在 `data/nonebot_plugin_aigf_master`。
 
 ### 📺 /bili —— B 站直播与动态订阅
 
@@ -304,19 +304,46 @@ qqbot-nonebot-llbot/
 ├── LLBot-Desktop-win-x64/  # QQ 协议端（桌面版，备用）
 ├── qqbot/                  # NoneBot2 项目
 │   ├── plugins/            # 本地插件（可自由修改）
+│   ├── .env.example        # 配置模板
 │   ├── .env.prod           # 运行配置
-│   └── pyproject.toml      # 依赖与插件加载配置
+│   ├── pyproject.toml      # 依赖与插件加载配置
+│   └── uv.lock             # uv 锁定的依赖版本
 └── data/                   # 插件运行数据（订阅、Cookie 等）
 ```
+
+### 使用 uv 管理环境
+
+项目使用 [uv](https://docs.astral.sh/uv/) 管理 Python 环境和依赖，`uv.lock` 记录了经过验证的完整依赖版本。首次使用请先安装 uv，然后在项目根目录执行：
+
+```bash
+# 创建 .venv，并按 pyproject.toml + uv.lock 安装依赖
+uv sync --locked
+
+# 启动 NoneBot
+uv run nb run
+```
+
+`uv sync` 会自动创建项目的 `.venv`，不需要手动执行 `python -m venv` 或激活虚拟环境；`uv run` 会自动使用这个环境运行命令。`--locked` 会严格要求 `uv.lock` 与 `pyproject.toml` 一致，如果锁文件过期会直接报错，避免不同机器悄悄安装出不同版本。
+
+更新代码或依赖时使用：
+
+```bash
+git pull
+uv sync --locked
+uv run nb run
+```
+
+新增依赖时使用 `uv add <包名>`；如果手动修改了 `pyproject.toml`，则先运行 `uv lock` 更新锁文件，再运行 `uv sync --locked`。提交时需要同时提交 `pyproject.toml` 和 `uv.lock`。不要再用 `pip install` 手动安装依赖，以免 `.venv` 与锁文件不一致。如果确实需要保留未声明在 `pyproject.toml` 中的包，可以使用 `uv sync --inexact`，但一般不推荐。
 
 ### 启动方式
 
 1. 启动 QQ 协议端：运行 `llbot.exe`，登录 QQ。
    web 端口：http://127.0.0.1:3080/
-2. 启动机器人：在 `qqbot` 目录下激活 Python 环境，执行：
+2. 启动机器人：在包含 `pyproject.toml` 的项目根目录执行：
 
-```
-nb run
+```bash
+uv sync --locked
+uv run nb run
 ```
 
 LLBot 与 NoneBot 连接成功后，机器人即开始工作。
@@ -325,7 +352,7 @@ LLBot 与 NoneBot 连接成功后，机器人即开始工作。
 
 | 组件 | 选型 | 版本 |
 | --- | --- | --- |
-| 运行语言 | Python（Miniconda 环境） | 3.12 |
+| 运行语言 | Python（uv 管理） | 3.12 |
 | 机器人框架 | NoneBot2 | 2.5.0 |
 | 适配器 | nonebot-adapter-onebot（OneBot V11） | 2.4.6 |
 | 驱动 | FastAPI（HTTP + WebSocket） | 0.141 |
