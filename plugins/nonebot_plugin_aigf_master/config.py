@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field
 
 class PluginConfig(BaseModel):
     # LLM 配置
-    aigfm_llm_api_key: str = Field("", description="LLM API Key（留空时插件不会响应）")
+    aigfm_llm_api_key: str = Field(..., description="LLM API Key")
     aigfm_llm_model: str = Field("gpt-3.5-turbo", description="LLM 模型名称")
-    aigfm_llm_base_url: str = Field("", description="LLM API 地址（留空时插件不会响应）")
+    aigfm_llm_base_url: str = Field(..., description="LLM API 地址")
     aigfm_llm_json_mode: bool = Field(True, description="是否强制 LLM 输出 JSON")
     aigfm_llm_tools_json_strict: bool = Field(False, description="工具调用路径首次请求也强制 JSON 输出（部分 OpenAI 兼容服务不支持 tools+json_object 组合，开启前请确认服务商支持）")
     aigfm_llm_temperature: float = Field(0.5, description="LLM 温度参数")
@@ -64,10 +64,11 @@ class PluginConfig(BaseModel):
 
     # 搜索
     aigfm_search_enabled: bool = Field(False, description="是否启用联网搜索")
-    aigfm_search_api: Literal["tavily", "bocha", "bing", "openwebsearch"] = Field("tavily", description="搜索 API")
-    aigfm_search_api_key: str = Field("", description="搜索 API Key（tavily/bocha/bing 必填）")
+    aigfm_search_api: Literal["tavily", "bocha", "bing", "openwebsearch", "deepseek"] = Field("tavily", description="搜索 API")
+    aigfm_search_api_key: str = Field("", description="搜索 API Key（tavily/bocha/bing 必填；deepseek 留空则用 LLM Key）")
     aigfm_search_max_results: int = Field(3, description="最大搜索结果数")
     aigfm_openwebsearch_url: str = Field("", description="open-websearch 本地服务地址（如 http://127.0.0.1:3210）")
+    aigfm_search_base_url: str = Field("", description="搜索 API 根地址（deepseek 用，留空则用官方 https://api.deepseek.com）")
 
     # 代理
     aigfm_proxy_enabled: bool = Field(False, description="是否启用代理")

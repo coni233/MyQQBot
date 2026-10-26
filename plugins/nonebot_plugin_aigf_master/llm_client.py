@@ -28,24 +28,10 @@ class LLMClient:
     """LLM 客户端"""
 
     def __init__(self, api_key: str, base_url: str, proxy: str | None = None):
-        self._api_key = api_key
-        self._base_url = base_url
-        self._proxy = proxy
-        self._client: AsyncOpenAI | None = None
-
-    def _ensure_client(self) -> AsyncOpenAI:
-        """延迟创建客户端，未配置时也能正常加载插件"""
-        if self._client is None:
-            if not self._api_key or not self._base_url:
-                raise RuntimeError(
-                    "未配置 AIGFM_LLM_API_KEY / AIGFM_LLM_BASE_URL，无法调用 LLM"
-                )
-            self._client = AsyncOpenAI(
-                api_key=self._api_key,
-                base_url=self._base_url,
-                http_client=make_http_client(self._proxy),
-            )
-        return self._client
+        self._client = AsyncOpenAI(
+            api_key=api_key, base_url=base_url,
+            http_client=make_http_client(proxy),
+        )
 
     async def chat(
         self, prompt: str, model: str,
@@ -63,7 +49,7 @@ class LLMClient:
         if json_mode:
             kwargs["response_format"] = {"type": "json_object"}
 
-        response = await self._ensure_client().chat.completions.create(**kwargs)
+        response = await self._client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
         return _strip_think_tags(content) if content else None
 
@@ -85,7 +71,7 @@ class LLMClient:
         kwargs: dict = {"messages": messages, "model": model, "tools": tools, "temperature": 0.5, "timeout": 300}
         if json_mode and first_call_json:
             kwargs["response_format"] = {"type": "json_object"}
-        response = await self._ensure_client().chat.completions.create(**kwargs)
+        response = await self._client.chat.completions.create(**kwargs)
         message = response.choices[0].message
 
         if message.tool_calls:
@@ -114,7 +100,7 @@ class LLMClient:
                 kwargs["response_format"] = {"type": "json_object"}
             try:
                 response = await asyncio.wait_for(
-                    self._ensure_client().chat.completions.create(**kwargs), timeout=_FINAL_ROUND_TIMEOUT)
+                    self._client.chat.completions.create(**kwargs), timeout=_FINAL_ROUND_TIMEOUT)
             except asyncio.TimeoutError:
                 logger.warning(f"[LLM] 最终回复超时（{_FINAL_ROUND_TIMEOUT:.0f}s）")
                 return None, used_tool

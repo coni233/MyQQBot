@@ -29,16 +29,15 @@ class ImageHandler:
         self._anime = AnimeRecognizer(cache_dir)
         self._vlm: VLMClient | None = None
         if plugin_config.aigfm_image_mode == "vlm" and plugin_config.aigfm_vlm_enabled:
+            if not plugin_config.aigfm_vlm_model or not plugin_config.aigfm_vlm_base_url:
+                raise ValueError("VLM 模式已启用，但 vlm_model 或 vlm_base_url 未配置")
             api_key = plugin_config.aigfm_vlm_api_key or plugin_config.aigfm_llm_api_key
-            if not (plugin_config.aigfm_vlm_model and plugin_config.aigfm_vlm_base_url and api_key):
-                logger.warning("[图片] VLM 未完整配置（model/base_url/api_key），图片理解将不可用")
-            else:
-                proxy = (plugin_config.aigfm_https_proxy or plugin_config.aigfm_http_proxy) if plugin_config.aigfm_proxy_enabled else None
-                self._vlm = VLMClient(
-                    api_key=api_key, model=plugin_config.aigfm_vlm_model,
-                    base_url=plugin_config.aigfm_vlm_base_url,
-                    http_client=make_http_client(proxy),
-                )
+            proxy = (plugin_config.aigfm_https_proxy or plugin_config.aigfm_http_proxy) if plugin_config.aigfm_proxy_enabled else None
+            self._vlm = VLMClient(
+                api_key=api_key, model=plugin_config.aigfm_vlm_model,
+                base_url=plugin_config.aigfm_vlm_base_url,
+                http_client=make_http_client(proxy),
+            )
 
     async def warmup_anime(self) -> None:
         """启动预热角色识别后端（目前仅有 AnimeTrace 的模型列表查询）"""

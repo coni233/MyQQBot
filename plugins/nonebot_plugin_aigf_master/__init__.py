@@ -73,8 +73,12 @@ _image_gen = ImageGenClient(
     _proxy,
 ) if plugin_config.aigfm_image_gen_enabled else None
 _search = create_search_client(
-    plugin_config.aigfm_search_api, plugin_config.aigfm_search_api_key,
+    plugin_config.aigfm_search_api,
+    # deepseek 的 Key 一般和 LLM 是同一个，没单独配就沿用 LLM Key
+    plugin_config.aigfm_search_api_key
+    or (plugin_config.aigfm_llm_api_key if plugin_config.aigfm_search_api == "deepseek" else ""),
     plugin_config.aigfm_openwebsearch_url,
+    plugin_config.aigfm_search_base_url,
 ) if plugin_config.aigfm_search_enabled else None
 _peer_client = PeerClient(plugin_config.aigfm_peer_bots) if plugin_config.aigfm_peer_bots else None
 
@@ -788,10 +792,6 @@ async def handle_group_notice(bot: Bot, event: Event):
 
 @get_driver().on_startup
 async def _on_startup():
-    if not plugin_config.aigfm_enabled_groups:
-        logger.info("[启动] AIGFM_ENABLED_GROUPS 为空，AI 群友不会在任何群响应")
-    if not plugin_config.aigfm_llm_api_key or not plugin_config.aigfm_llm_base_url:
-        logger.warning("[启动] 未配置 AIGFM_LLM_API_KEY / AIGFM_LLM_BASE_URL，AI 群友无法调用 LLM")
     logger.success(f"[启动] 图片理解模式: {plugin_config.aigfm_image_mode}")
     anime_backend = effective_backend()
     if anime_backend == "off":

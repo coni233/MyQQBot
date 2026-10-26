@@ -9,24 +9,10 @@ class ImageGenClient:
 
     def __init__(self, api_key: str, model: str, base_url: str,
                  proxy: str | None = None, timeout: int = 120):
-        self._api_key = api_key
-        self._base_url = base_url
-        self._proxy = proxy
-        self._client: AsyncOpenAI | None = None
+        http_client = httpx.AsyncClient(proxy=proxy) if proxy else None
+        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url, http_client=http_client)
         self._model = model
         self._timeout = timeout
-
-    def _ensure_client(self) -> AsyncOpenAI:
-        if self._client is None:
-            if not self._api_key or not self._base_url:
-                raise RuntimeError(
-                    "未配置 AIGFM_IMAGE_GEN_API_KEY / AIGFM_IMAGE_GEN_BASE_URL，无法生成图片"
-                )
-            http_client = httpx.AsyncClient(proxy=self._proxy) if self._proxy else None
-            self._client = AsyncOpenAI(
-                api_key=self._api_key, base_url=self._base_url, http_client=http_client,
-            )
-        return self._client
 
     async def generate(self, prompt: str, size: str = "1024x1024",
                        reference_images: list[str] | None = None,
@@ -45,7 +31,7 @@ class ImageGenClient:
         )
         if reference_images:
             kwargs["extra_body"] = {"image": reference_images, "watermark": watermark}
-        response = await self._ensure_client().images.generate(**kwargs)
+        response = await self._client.images.generate(**kwargs)
         if not response.data:
             return None
         data = response.data[0]
