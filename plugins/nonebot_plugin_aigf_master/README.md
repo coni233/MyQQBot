@@ -18,7 +18,7 @@
 > [!TIP]
 > **有个跨适配器 beta 版正在测试中**：`2.0.0-beta` 已作为**预发布**发到 PyPI，消息收发与会话身份改走 `nonebot-plugin-alconna` / `nonebot-plugin-uninfo`，OneBot / Satori / Telegram / Discord 等适配器共用同一套聊天、记忆与命令逻辑。
 > 稳定版仍是 **1.6.x**（`pip install` 与 `nb plugin install` 默认只会装稳定版），装 beta 必须显式写出版本号：
-> `pip install nonebot-plugin-aigf-master==2.0.0b3`
+> `pip install nonebot-plugin-aigf-master==2.0.0b4`
 > 最新版本号与支持边界见 [beta 分支的 README](https://github.com/Funny1Potato/nonebot-plugin-aigf-master/tree/beta)。
 
 ## 📖 介绍
@@ -33,7 +33,7 @@
 - 🧠 **LLM 命令学习**：通过观察群聊自动学习命令用法，支持学习、编辑、删除
 - 🌐 **跨 bot 通信**：通过 HTTP 获取其它 bot（同一 QQ 号下）的插件输出，并可远程调用其命令
 - 🖼️ **表情包功能**：AI 自主决定发表情包；自动从群聊中收藏
-- 🔍 **联网搜索**：支持 Tavily / Bocha / Bing，自动搜索不懂的梗和网络用语
+- 🔍 **联网搜索**：支持 Tavily / Bocha / Bing / DeepSeek / 本地 open-websearch，自动搜索不懂的梗和网络用语
 - 🧠 **四层记忆系统**：短期记忆、长期记忆、群友信息、文化记忆，LLM 自主管理
 - 🎨 **AI 生图**：LLM可调用生图模型生成图片发到群里，尺寸由 LLM 决定（程序限最大尺寸），支持参考图改绘（回复图片消息或从聊天记录选图）
 
@@ -94,9 +94,10 @@ AIGFM_LLM_BASE_URL="https://api.deepseek.com"                     # LLM API 地�
 AIGFM_LLM_MODEL="deepseek-v4-flash"                               # LLM 模型名称
 AIGFM_ENABLED_GROUPS=[123456, 789012]                             # 启用的群号列表
 
-# --- 图片理解（VLM） ---
-AIGFM_IMAGE_MODE="vlm"                  # 图片模式: vlm / llm（默认 vlm）
-AIGFM_VLM_ENABLED=true                  # 是否启用VLM（仅 vlm 模式有效，默认 true）
+# --- 图片理解（多模态 LLM / VLM） ---
+AIGFM_IMAGE_MODE="llm"                  # 图片模式: llm（默认，多模态统一模型）/ vlm（独立视觉模型）
+AIGFM_LLM_MULTIMODAL=""                 # 主模型是否支持图片: 留空=启动时自动探测 / true=强制支持 / false=强制不支持并回落到 vlm
+AIGFM_VLM_ENABLED=true                  # 是否启用VLM（vlm 模式必需；llm 模式主模型不支持图片时作为回落通道，默认 true）
 AIGFM_VLM_MODEL="..."                   # VLM 模型名称（vlm 模式必填）
 AIGFM_VLM_BASE_URL="https://..."        # VLM API 地址
 AIGFM_VLM_API_KEY=""                    # VLM API Key（为空时使用 llm 的 key）
@@ -134,10 +135,11 @@ AIGFM_ENERGY_BASELINE=0.7               # 社交能量基线（默认 0.7，范�
 
 # --- 联网搜索 ---
 AIGFM_SEARCH_ENABLED=false              # 是否启用联网搜索（默认 false）
-AIGFM_SEARCH_API=tavily                 # 搜索API: tavily / bocha / bing / openwebsearch（默认 tavily）
-AIGFM_SEARCH_API_KEY="xxx"              # 搜索 API Key（api=tavily/bocha/bing 时必填）
+AIGFM_SEARCH_API=tavily                 # 搜索API: tavily / bocha / bing / openwebsearch / deepseek（默认 tavily）
+AIGFM_SEARCH_API_KEY="xxx"              # 搜索 API Key（api=tavily/bocha/bing 时必填；deepseek 留空则沿用 LLM Key）
 AIGFM_SEARCH_MAX_RESULTS=3              # 最大搜索结果数（默认 3）
 AIGFM_OPENWEBSEARCH_URL=""              # open-websearch 本地服务地址（api=openwebsearch 时必填，如 http://127.0.0.1:3210）
+AIGFM_SEARCH_BASE_URL=""                # 搜索 API 根地址（api=deepseek 时用，留空则用官方 https://api.deepseek.com）
 
 # --- 代理 ---
 AIGFM_PROXY_ENABLED=false                  # 是否启用代理（默认 false）
@@ -300,7 +302,7 @@ LLM 调用：invoke_plugin(command="决斗", parts=[
 ```
 
 - `command` **只放命令名本身**；要 @ 的群友、附加文字等一律放进 `parts`
-- `at` 段按**群昵称**解析（与聊天记录里的 `@昵称` 一致），也接受直接给 QQ 号；解析不出会跳过该段，并在工具回执里提示
+- `at` 段按**群昵称或群名片**解析（与聊天记录里的 `@昵称` 一致），也接受直接给 QQ 号；解析不出会跳过该段，并在工具回执里提示
 - 各段之间由程序补**一个**空格，不需要也不用自己加空格（多写的空格会被规整，避免出现双空格导致参数解析失败）
 
 ### 调用限制
@@ -455,6 +457,7 @@ LLM 可以：
 | `bocha` | 国产 AI 搜索 API，中文搜索效果好 | 无 | https://open.bochaai.com |
 | `bing` | 微软必应搜索（Azure Bing Search API v7） | 无 | https://portal.azure.com |
 | `openwebsearch` | 本地 Node.js 搜索服务，聚合多引擎（bing/baidu/duckduckgo 等） | 需先启动 daemon：`cd open-webSearch && npm install && npm run serve`，配置 `AIGFM_OPENWEBSEARCH_URL` | 无需 Key，项目：https://github.com/Aas-ee/open-webSearch |
+| `deepseek` | DeepSeek 自带联网搜索，摘要写得很适合喂给模型 | 无（`AIGFM_SEARCH_API_KEY` 留空则沿用 LLM Key） | https://platform.deepseek.com |
 
 > **Tavily** 需额外安装依赖：`pip install tavily-python`（或安装本插件时带上 extra：`pip install "nonebot-plugin-aigf-master[tavily]"`）
 
@@ -551,8 +554,18 @@ memes/
 
 | 模式 | 流程 | 适用场景 |
 |------|------|---------|
-| `vlm`（默认） | 图片 → VLM 分析 → 文字描述给 LLM | LLM 不支持图片输入 |
-| `llm` | 图片 → base64 直接附在 LLM prompt 中 | LLM 支持视觉 |
+| `llm`（默认） | 图片 → base64 直接附在 LLM prompt 中 | 主模型支持视觉；推荐用统一多模态模型 |
+| `vlm` | 图片 → VLM 分析 → 文字描述给 LLM | 主 LLM 不支持图片输入 |
+
+> 默认使用 `llm` 模式，适应当前主流多模态模型。若主 LLM 只能处理文字，请显式设置 `AIGFM_IMAGE_MODE=vlm` 并配置 VLM，否则图片请求可能被服务端拒绝。
+
+`llm` 模式下主模型不支持图片时的自动回落：
+
+- 启动时用一张 16×16 的小图探测一次主模型是否接受图片输入，探不过就自动回落到 `vlm` 模式（解析期把图片转成文字描述，请求期只发文本），存量用户升级后不会因为主模型只支持文本而整批不回复
+- 运行期若带图请求被服务端明确拒绝（400/415/422），同样标记为不支持多模态，**下一批**消息起自动回落到 `vlm` 模式
+- 回落到 `vlm` 模式需要 VLM 可用：没配 `AIGFM_VLM_MODEL` / `AIGFM_VLM_BASE_URL` 时图片只能以「识图失败」进上下文
+- `AIGFM_LLM_MULTIMODAL` 可覆盖探测结果：`true` 强制按支持处理（跳过探测，不额外消耗请求）、`false` 强制按不支持处理并直接回落 `vlm`
+- 探测本身出问题时（鉴权失败、限流、网络异常）不做判定，仍按支持处理，避免掩盖真实错误
 
 `vlm` 模式下的行为说明：
 
@@ -653,6 +666,8 @@ LLM 支持以下回复类型：
 | @ | `{"type": "at", "name": "群友昵称"}` | 艾特群友 |
 | 表情包 | `{"type": "meme", "id": "表情包id"}` | 发送表情包 |
 
+> 要 @ 群友时应使用独立的 `at` 段。为兼容部分模型误把 `@昵称` 写进文本的情况，发送前也会把能匹配到群成员的文本 @ 自动转换为真实 QQ @。
+
 ## 📊 Token 消耗参考
 
 以下是一组实测值：测试群约 120 人、活跃约 15 人，平均每天 400 条消息，一个月合计约 3.6 亿 tokens。
@@ -667,7 +682,7 @@ LLM 支持以下回复类型：
 主要影响因素：
 
 - **模型单价**：不同模型差别很大，建议先用便宜的模型跑量
-- **图片**：`AIGFM_IMAGE_MODE=llm` 会把图片本体随请求发送，比默认的 `vlm`（另发一次识图请求）更贵
+- **图片**：默认的 `AIGFM_IMAGE_MODE=llm` 会把图片本体随主请求发送，费用按主模型的多模态输入计算；也可改用 `vlm`（另发一次识图请求），适合主模型不支持图片或希望使用轻量视觉模型的场景
 - **联网搜索 / 生图 / 插件调用**：会额外产生调用轮次
 - **批次大小**：`AIGFM_BATCH_COUNT` / `AIGFM_BATCH_TIMEOUT` 攒得越多，单次请求里的上下文（历史、记忆、命令清单）越长，但**请求次数越少**；调小则相反
 - **启用的会话数**：每个群/频道各自独立计费
